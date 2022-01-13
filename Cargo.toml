@@ -17,6 +17,7 @@ categories = ["parsing", "no-std"]
 license = "MIT"
 
 edition = "2018"
+rust-version = "1.51.0"
 
 [package.metadata.docs.rs]
 all-features = true

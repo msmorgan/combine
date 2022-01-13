@@ -1,7 +1,6 @@
 //! Module containing parsers specialized on character streams.
 
 use crate::{
-    error::ParseError,
     parser::{
         combinator::no_partial,
         repeat::skip_many,

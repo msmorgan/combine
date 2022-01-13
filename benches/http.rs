@@ -12,7 +12,7 @@ use {
         many, many1,
         parser::range::{range, take_while1},
         stream::easy,
-        token, ParseError, Parser, RangeStream,
+        token, Parser, RangeStream,
     },
     criterion::{black_box, Bencher, Criterion},
 };
@@ -150,6 +150,7 @@ fn http_requests_large_cheap_error(b: &mut Bencher<'_>) {
 fn http_requests_bench<'a, Input>(b: &mut Bencher<'_>, buffer: Input)
 where
     Input: RangeStream<Token = u8, Range = &'a [u8]> + Clone,
+    Input::Error: fmt::Debug,
 {
     b.iter(|| {
         let mut buf = black_box(buffer.clone());

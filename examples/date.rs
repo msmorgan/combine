@@ -9,7 +9,6 @@ use std::{
 
 use combine::{
     choice,
-    error::ParseError,
     many, optional,
     parser::char::{char, digit},
     stream::position,

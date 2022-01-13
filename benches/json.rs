@@ -27,7 +27,7 @@ use {
             position::{self, SourcePosition},
             IteratorStream,
         },
-        EasyParser, Parser, Stream, StreamOnce,
+        EasyParser, Parser, Stream,
     },
     criterion::{black_box, Bencher, Criterion},
 };

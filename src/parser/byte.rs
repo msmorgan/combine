@@ -1,7 +1,7 @@
 //! Module containing parsers specialized on byte streams.
 
 use crate::{
-    error::{self, ParseError, ParseResult::*},
+    error::{self, ParseResult::*},
     parser::{
         combinator::no_partial,
         range::{take_fn, TakeRange},

@@ -506,7 +506,7 @@ macro_rules! combine_parser_impl {
         }
 
         $(#[$attr])*
-        #[inline]
+        
         $fn_vis fn $name< $($type_params)* >(
                 $($arg : $arg_type),*
             ) -> $type_name<$($type_params)*>

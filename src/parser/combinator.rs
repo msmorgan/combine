@@ -360,7 +360,6 @@ where
     P: Parser<Input>,
     F: FnMut(P::Output) -> Result<O, E>,
     E: Into<<Input::Error as ParseError<Input::Token, Input::Range, Input::Position>>::StreamError>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     type Output = O;
     type PartialState = P::PartialState;

@@ -709,7 +709,6 @@ mod std_tests {
     fn integer<Input>(input: &mut Input) -> StdParseResult<i64, Input>
     where
         Input: Stream<Token = char>,
-        Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
     {
         let (s, input) = many1::<String, _, _>(digit())
             .expected("integer")
@@ -834,7 +833,6 @@ mod std_tests {
     fn term<Input>(input: &mut Input) -> StdParseResult<Expr, Input>
     where
         Input: Stream<Token = char>,
-        Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
     {
         fn times(l: Expr, r: Expr) -> Expr {
             Expr::Times(Box::new(l), Box::new(r))

@@ -779,7 +779,7 @@ macro_rules! dispatch_parser_impl {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! dispatch_inner {
-    ($expr_ident: ident [$first_ident: ident $($id: ident)*] [$($collected: tt)*] $($pat: pat)|+ $(if $pred:expr)? => $expr: expr, $($rest_alt: tt)*) => {
+    ($expr_ident: ident [$first_ident: ident $($id: ident)*] [$($collected: tt)*] $($pat: pat_param)|+ $(if $pred:expr)? => $expr: expr, $($rest_alt: tt)*) => {
         $crate::dispatch_inner!{ $expr_ident [ $($id)* ] [$($collected)* $first_ident $($pat)|+ $(if $pred)? => $expr,] $($rest_alt)*}
     };
     ($expr_ident: ident [$($id: ident)*] [$($collected: tt)*]) => {
@@ -788,7 +788,7 @@ macro_rules! dispatch_inner {
     ($expr_ident: ident [$($ident_tt: tt)*]) => {
         unreachable!()
     };
-    ($expr_ident: ident $( $ident: ident $($pat: pat)|+ $(if $pred:expr)? => $expr: expr,)+ ) => {
+    ($expr_ident: ident $( $ident: ident $($pat: pat_param)|+ $(if $pred:expr)? => $expr: expr,)+ ) => {
         match $expr_ident {
             $(
                 $($pat)|+ $(if $pred)? => Dispatch::$ident(check_parser($expr)),
@@ -818,7 +818,7 @@ macro_rules! dispatch_inner {
 /// ```
 #[macro_export]
 macro_rules! dispatch {
-    ($match_expr: expr; $( $($pat: pat)|+ $(if $pred:expr)? => $expr: expr ),+ $(,)? ) => {
+    ($match_expr: expr; $( $($pat: pat_param)|+ $(if $pred:expr)? => $expr: expr ),+ $(,)? ) => {
         {
             $crate::dispatch_parser_impl!{ Dispatch [A B C D E F G H I J K L M N O P Q R S T U V X Y Z] [] $($expr,)+ }
 

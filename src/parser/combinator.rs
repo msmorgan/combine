@@ -1416,7 +1416,7 @@ macro_rules! opaque {
     };
     ($e: expr,) => {
         $crate::parser::combinator::opaque(
-            move |f: &mut dyn FnMut(&mut $crate::Parser<_, Output = _, PartialState = _>)| {
+            move |f: &mut dyn FnMut(&mut dyn $crate::Parser<_, Output = _, PartialState = _>)| {
                 f(&mut $e)
             },
         )

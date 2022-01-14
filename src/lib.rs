@@ -448,14 +448,8 @@ macro_rules! combine_parser_impl {
         // We want this to work on older compilers, at least for a while
         #[allow(non_shorthand_field_patterns)]
         impl<$($type_params)*> $crate::Parser<$input_type> for $type_name<$($type_params)*>
-            where <$input_type as $crate::stream::StreamOnce>::Error:
-                    $crate::error::ParseError<
-                        <$input_type as $crate::stream::StreamOnce>::Token,
-                        <$input_type as $crate::stream::StreamOnce>::Range,
-                        <$input_type as $crate::stream::StreamOnce>::Position
-                        >,
-                $input_type: $crate::stream::Stream,
-                $($where_clause)*
+            where $input_type: $crate::stream::Stream,
+                  $($where_clause)*
         {
 
             type Output = $output_type;
@@ -506,18 +500,12 @@ macro_rules! combine_parser_impl {
         }
 
         $(#[$attr])*
-        
+
         $fn_vis fn $name< $($type_params)* >(
                 $($arg : $arg_type),*
             ) -> $type_name<$($type_params)*>
-            where <$input_type as $crate::stream::StreamOnce>::Error:
-                    $crate::error::ParseError<
-                        <$input_type as $crate::stream::StreamOnce>::Token,
-                        <$input_type as $crate::stream::StreamOnce>::Range,
-                        <$input_type as $crate::stream::StreamOnce>::Position
-                        >,
-                $input_type: $crate::stream::Stream,
-                $($where_clause)*
+            where $input_type: $crate::stream::Stream,
+                  $($where_clause)*
         {
             $type_name {
                 $($arg,)*

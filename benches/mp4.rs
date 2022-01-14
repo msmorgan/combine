@@ -4,17 +4,15 @@ extern crate criterion;
 
 use std::{fs::File, io::Read, str::from_utf8};
 
-use {
-    combine::{
-        parser::{
-            byte::num::be_u32,
-            range::{range, take},
-        },
-        stream::easy::ParseError,
-        *,
+use combine::{
+    parser::{
+        byte::num::be_u32,
+        range::{range, take},
     },
-    criterion::{black_box, Bencher, Criterion},
+    stream::easy::ParseError,
+    *,
 };
+use criterion::{black_box, Bencher, Criterion};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct FileType<'a> {

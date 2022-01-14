@@ -3,34 +3,31 @@
 
 #![cfg(feature = "std")]
 
-#[macro_use]
-extern crate criterion;
-
-#[macro_use]
 extern crate combine;
+extern crate criterion;
 
 use std::{collections::HashMap, fs::File, io::Read, path::Path};
 
-use {
-    combine::{
-        error::{Commit, ParseError},
-        parser::{
-            char::{char, digit, spaces, string},
-            choice::{choice, optional},
-            function::parser,
-            repeat::{many, many1, sep_by},
-            sequence::between,
-            token::{any, satisfy, satisfy_map},
-        },
-        stream::{
-            buffered,
-            position::{self, SourcePosition},
-            IteratorStream,
-        },
-        EasyParser, Parser, Stream,
+use combine::{
+    error::{Commit, ParseError},
+    opaque,
+    parser::{
+        char::{char, digit, spaces, string},
+        choice::{choice, optional},
+        combinator::no_partial,
+        function::parser,
+        repeat::{many, many1, sep_by},
+        sequence::between,
+        token::{any, satisfy, satisfy_map},
     },
-    criterion::{black_box, Bencher, Criterion},
+    stream::{
+        buffered,
+        position::{self, SourcePosition},
+        IteratorStream,
+    },
+    EasyParser, Parser, Stream,
 };
+use criterion::{black_box, criterion_group, criterion_main, Bencher, Criterion};
 
 #[derive(PartialEq, Debug)]
 enum Value {
@@ -143,44 +140,51 @@ where
         .expected("object")
 }
 
+fn array<Input>() -> impl Parser<Input, Output = Value>
+where
+    Input: Stream<Token = char>,
+{
+    between(
+        lex(char('[')),
+        lex(char(']')),
+        sep_by(json_value(), lex(char(','))),
+    )
+    .map(Value::Array)
+}
+
 #[inline]
 fn json_value<Input>() -> impl Parser<Input, Output = Value>
 where
     Input: Stream<Token = char>,
 {
-    json_value_()
+    opaque!(no_partial(choice((
+        json_string().map(Value::String),
+        object(),
+        array(),
+        number().map(Value::Number),
+        lex(string("false").map(|_| Value::Bool(false))),
+        lex(string("true").map(|_| Value::Bool(true))),
+        lex(string("null").map(|_| Value::Null)),
+    ))))
 }
-
-// We need to use `parser!` to break the recursive use of `value` to prevent the returned parser
-// from containing itself
-parser! {
-    #[inline]
-    fn json_value_[Input]()(Input) -> Value
-        where [ Input: Stream<Token = char> ]
-    {
-        let array = between(
-            lex(char('[')),
-            lex(char(']')),
-            sep_by(json_value(), lex(char(','))),
-        ).map(Value::Array);
-
-        choice((
-            json_string().map(Value::String),
-            object(),
-            array,
-            number().map(Value::Number),
-            lex(string("false").map(|_| Value::Bool(false))),
-            lex(string("true").map(|_| Value::Bool(true))),
-            lex(string("null").map(|_| Value::Null)),
-        ))
-    }
-}
+//
+// // We need to use `parser!` to break the recursive use of `value` to prevent the returned parser
+// // from containing itself
+// parser! {
+//     #[inline]
+//     fn json_value_[Input]()(Input) -> Value
+//         where [ Input: Stream<Token = char> ]
+//     {
+//
+//     }
+// }
 
 #[test]
 fn json_test() {
     use self::Value::*;
 
-    let input = r#"{
+    let input = r#"\
+{
     "array": [1, ""],
     "object": {},
     "number": 3.14,

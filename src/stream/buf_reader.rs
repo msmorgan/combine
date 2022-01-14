@@ -8,11 +8,7 @@ use std::io::{self, BufRead, Read};
 ))]
 use std::pin::Pin;
 
-#[cfg(any(
-    feature = "futures-03",
-    feature = "tokio-02",
-    feature = "tokio-03"
-))]
+#[cfg(any(feature = "futures-03", feature = "tokio-02", feature = "tokio-03"))]
 use std::mem::MaybeUninit;
 
 #[cfg(feature = "futures-core-03")]
@@ -775,12 +771,10 @@ mod tests {
 
     use std::{io, pin::Pin};
 
-    use {
-        bytes_05::BytesMut,
-        tokio_02_dep::{
-            self as tokio,
-            io::{AsyncRead, AsyncReadExt},
-        },
+    use bytes_05::BytesMut;
+    use tokio_02_dep::{
+        self as tokio,
+        io::{AsyncRead, AsyncReadExt},
     };
 
     impl<R: AsyncRead> BufReader<R> {
@@ -842,12 +836,10 @@ mod tests_tokio_1 {
 
     use std::{io, pin::Pin};
 
-    use {
-        bytes::BytesMut,
-        tokio_dep::{
-            self as tokio,
-            io::{AsyncRead, AsyncReadExt},
-        },
+    use bytes::BytesMut;
+    use tokio_dep::{
+        self as tokio,
+        io::{AsyncRead, AsyncReadExt},
     };
 
     impl<R: AsyncRead> BufReader<R> {

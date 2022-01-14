@@ -1,7 +1,9 @@
-use crate::lib::future::Future;
-use crate::lib::marker::Unpin;
-use crate::lib::pin::Pin;
-use crate::lib::task::{Context, Poll};
+use crate::lib::{
+    future::Future,
+    marker::Unpin,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 // Replace usage of this with std::future::poll_fn once it stabilizes
 pub struct PollFn<F> {

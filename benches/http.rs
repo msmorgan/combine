@@ -7,15 +7,13 @@ extern crate combine;
 
 use std::fmt;
 
-use {
-    combine::{
-        many, many1,
-        parser::range::{range, take_while1},
-        stream::easy,
-        token, Parser, RangeStream,
-    },
-    criterion::{black_box, Bencher, Criterion},
+use combine::{
+    many, many1,
+    parser::range::{range, take_while1},
+    stream::easy,
+    token, Parser, RangeStream,
 };
+use criterion::{black_box, Bencher, Criterion};
 
 #[derive(Debug)]
 struct Request<'a> {

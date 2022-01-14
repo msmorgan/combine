@@ -3,25 +3,24 @@
 
 use std::{cell::Cell, io::Cursor, rc::Rc, str};
 
-use {futures_03_dep as futures, tokio_dep as tokio};
+use futures_03_dep as futures;
+use tokio_dep as tokio;
 
-use {
-    bytes::{Buf, BytesMut},
-    combine::{
-        error::{ParseError, StreamError},
-        parser::{
-            byte::digit,
-            combinator::{any_partial_state, AnyPartialState},
-            range::{range, recognize, take},
-        },
-        skip_many, skip_many1,
-        stream::{easy, PartialStream, RangeStream, StreamErrorFor},
-        Parser,
+use bytes::{Buf, BytesMut};
+use combine::{
+    error::{ParseError, StreamError},
+    parser::{
+        byte::digit,
+        combinator::{any_partial_state, AnyPartialState},
+        range::{range, recognize, take},
     },
-    futures::prelude::*,
-    partial_io::PartialOp,
-    tokio_util::codec::{Decoder, FramedRead},
+    skip_many, skip_many1,
+    stream::{easy, PartialStream, RangeStream, StreamErrorFor},
+    Parser,
 };
+use futures::prelude::*;
+use partial_io::PartialOp;
+use tokio_util::codec::{Decoder, FramedRead};
 
 // Workaround partial_io not working with tokio-0.2
 #[path = "../tests/support/mod.rs"]

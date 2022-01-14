@@ -7,7 +7,8 @@ use std::{
     task::{self, Poll},
 };
 
-use {futures_03_dep::ready, partial_io::PartialOp};
+use futures_03_dep::ready;
+use partial_io::PartialOp;
 
 pub struct PartialAsyncRead<R> {
     inner: R,

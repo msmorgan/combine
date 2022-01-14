@@ -7,38 +7,36 @@ use std::{
     str,
 };
 
-use {
-    bytes::{Buf, BytesMut},
-    combine::{
-        any, count_min_max,
-        error::{ParseError, StreamError},
-        many1, parser,
-        parser::{
-            byte::{num, take_until_bytes},
-            char::{char, digit, letter, string},
-            choice::optional,
-            combinator::{
-                any_partial_state, any_send_partial_state, attempt, from_str, no_partial,
-                recognize, AnyPartialState, AnySendPartialState,
-            },
-            range::{
-                self, range, recognize_with_value, take, take_fn, take_until_range, take_while,
-                take_while1,
-            },
-            repeat,
+use bytes::{Buf, BytesMut};
+use combine::{
+    any, count_min_max,
+    error::{ParseError, StreamError},
+    many1, parser,
+    parser::{
+        byte::{num, take_until_bytes},
+        char::{char, digit, letter, string},
+        choice::optional,
+        combinator::{
+            any_partial_state, any_send_partial_state, attempt, from_str, no_partial, recognize,
+            AnyPartialState, AnySendPartialState,
         },
-        satisfy, sep_end_by, skip_many, skip_many1,
-        stream::{easy, RangeStream, StreamErrorFor},
-        token, Parser,
+        range::{
+            self, range, recognize_with_value, take, take_fn, take_until_range, take_while,
+            take_while1,
+        },
+        repeat,
     },
-    futures::prelude::*,
-    futures_03_dep as futures,
-    partial_io::PartialRead,
-    quick_error::quick_error,
-    quickcheck::quickcheck,
-    tokio_dep as tokio,
-    tokio_util::codec::{Decoder, FramedRead},
+    satisfy, sep_end_by, skip_many, skip_many1,
+    stream::{easy, RangeStream, StreamErrorFor},
+    token, Parser,
 };
+use futures::prelude::*;
+use futures_03_dep as futures;
+use partial_io::PartialRead;
+use quick_error::quick_error;
+use quickcheck::quickcheck;
+use tokio_dep as tokio;
+use tokio_util::codec::{Decoder, FramedRead};
 
 // Workaround partial_io not working with tokio-0.2
 mod support;
@@ -277,8 +275,6 @@ fn content_length<'a, Input>(
 ) -> impl Parser<Input, Output = String, PartialState = AnySendPartialState> + 'a
 where
     Input: RangeStream<Token = char, Range = &'a str> + 'a,
-    // Necessary due to rust-lang/rust#24159
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
 {
     let content_length = range("Content-Length: ").with(
         range::recognize(skip_many1(digit())).and_then(|digits: &str| {

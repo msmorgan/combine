@@ -44,20 +44,19 @@ fn not_followed_by_does_not_consume_any_input() {
 mod tests_std {
     use super::*;
 
-    use combine::easy::{Error, Errors};
-    use combine::parser::byte::alpha_num;
-    use combine::parser::byte::bytes;
-    use combine::parser::byte::bytes_cmp;
-    use combine::parser::byte::num::be_u32;
-    use combine::parser::char::char;
-    use combine::parser::char::{string, string_cmp};
-    use combine::parser::combinator::no_partial;
-    use combine::parser::range;
-    use combine::parser::repeat::{skip_until, take_until};
-    use combine::stream::position;
-    use combine::stream::position::SourcePosition;
     use combine::{
-        attempt, count, count_min_max, easy, many, optional, position, sep_by, sep_end_by1,
+        attempt, count, count_min_max, easy,
+        easy::{Error, Errors},
+        many, optional,
+        parser::{
+            byte::{alpha_num, bytes, bytes_cmp, num::be_u32},
+            char::{char, string, string_cmp},
+            combinator::no_partial,
+            range,
+            repeat::{skip_until, take_until},
+        },
+        position, sep_by, sep_end_by1,
+        stream::{position, position::SourcePosition},
         unexpected, value, EasyParser,
     };
 

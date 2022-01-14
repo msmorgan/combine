@@ -7,7 +7,11 @@ use std::{
     io::{self, Read},
 };
 
-use combine::{parser::char::space, stream::position, *};
+use combine::{
+    parser::{byte::spaces, char::space},
+    stream::position,
+    *,
+};
 
 #[cfg(feature = "std")]
 use combine::stream::easy;
@@ -58,7 +62,7 @@ where
     let comment = (token(';'), skip_many(satisfy(|c| c != '\n'))).map(|_| ());
     // Wrap the `spaces().or(comment)` in `skip_many` so that it skips alternating whitespace and
     // comments
-    skip_many(skip_many1(space()).or(comment))
+    skip_many(spaces().or(comment))
 }
 
 fn properties<Input>() -> impl Parser<Input, Output = HashMap<String, String>>
@@ -73,13 +77,13 @@ fn section<Input>() -> impl Parser<Input, Output = (String, HashMap<String, Stri
 where
     Input: Stream<Token = char>,
 {
-    (
+    se(
         between(token('['), token(']'), many(satisfy(|c| c != ']'))),
         whitespace(),
         properties(),
     )
-        .map(|(name, _, properties)| (name, properties))
-        .message("while parsing section")
+    .map(|(name, _, properties)| (name, properties))
+    .message("while parsing section")
 }
 
 fn ini<Input>() -> impl Parser<Input, Output = Ini>

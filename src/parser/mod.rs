@@ -1,8 +1,15 @@
 //! A collection of both concrete parsers as well as parser combinators.
 //!
-//! Implements the [`Parser`] trait which is the core of `combine` and contains the submodules
-//! implementing all combine parsers.
+//! Implements the [`Parser`] trait which is the core of `combine` and contains
+//! the submodules implementing all combine parsers.
 
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+
+use self::{
+    choice::{or, Or},
+    sequence::{skip, with, Skip, With},
+};
 use crate::{
     error::{
         ErrorInfo, ParseError,
@@ -22,19 +29,11 @@ use crate::{
     ErrorOffset,
 };
 
-use self::{
-    choice::{or, Or},
-    sequence::{skip, with, Skip, With},
-};
-
-#[cfg(feature = "alloc")]
-use alloc::boxed::Box;
-
 /// Internal API. May break without a semver bump
 #[macro_export]
 #[doc(hidden)]
 macro_rules! parse_mode {
-    ($input_type: ty) => {
+    ($input_type:ty) => {
         #[inline]
         fn parse_partial(
             &mut self,
@@ -69,13 +68,13 @@ pub mod repeat;
 pub mod sequence;
 pub mod token;
 
-/// By implementing the `Parser` trait a type says that it can be used to parse an input stream
-/// into the type `Output`.
+/// By implementing the `Parser` trait a type says that it can be used to parse
+/// an input stream into the type `Output`.
 ///
-/// All methods have a default implementation but there needs to be at least an implementation of
-/// [`parse_stream`], [`parse_stream`], or [`parse_lazy`]. If the last is implemented, an
-/// implementation of [`add_error`] may also be required. See the documentation for
-/// [`parse_lazy`] for details.
+/// All methods have a default implementation but there needs to be at least an
+/// implementation of [`parse_stream`], [`parse_stream`], or [`parse_lazy`]. If
+/// the last is implemented, an implementation of [`add_error`] may also be
+/// required. See the documentation for [`parse_lazy`] for details.
 ///
 /// [`parse_stream`]: trait.Parser.html#method.parse_stream
 /// [`parse_stream`]: trait.Parser.html#method.parse_stream
@@ -85,20 +84,21 @@ pub trait Parser<Input: Stream> {
     /// The type which is returned if the parser is successful.
     type Output;
 
-    /// Determines the state necessary to resume parsing after more input is supplied.
+    /// Determines the state necessary to resume parsing after more input is
+    /// supplied.
     ///
     /// If partial parsing is not supported this can be set to `()`.
     type PartialState: Default;
 
     /// Entry point of the parser. Takes some input and tries to parse it.
     ///
-    /// Returns the parsed result and the remaining input if the parser succeeds, or a
-    /// error otherwise.
+    /// Returns the parsed result and the remaining input if the parser
+    /// succeeds, or a error otherwise.
     ///
-    /// This is the most straightforward entry point to a parser. Since it does not decorate the
-    /// input in any way you may find the error messages a hard to read. If that is the case you
-    /// may want to try wrapping your input with an [`easy::Stream`] or call [`easy_parse`]
-    /// instead.
+    /// This is the most straightforward entry point to a parser. Since it does
+    /// not decorate the input in any way you may find the error messages a
+    /// hard to read. If that is the case you may want to try wrapping your
+    /// input with an [`easy::Stream`] or call [`easy_parse`] instead.
     ///
     /// [`easy::Stream`]: super::easy::Stream
     /// [`easy_parse`]: super::parser::EasyParser::easy_parse
@@ -115,8 +115,8 @@ pub trait Parser<Input: Stream> {
     /// Entry point of the parser when using partial parsing.
     /// Takes some input and tries to parse it.
     ///
-    /// Returns the parsed result and the remaining input if the parser succeeds, or a
-    /// error otherwise.
+    /// Returns the parsed result and the remaining input if the parser
+    /// succeeds, or a error otherwise.
     fn parse_with_state(
         &mut self,
         input: &mut Input,
@@ -128,10 +128,12 @@ pub trait Parser<Input: Stream> {
         }
     }
 
-    /// Parses using the stream `input` by calling [`Stream::uncons`] one or more times.
+    /// Parses using the stream `input` by calling [`Stream::uncons`] one or
+    /// more times.
     ///
-    /// Semantically equivalent to [`parse_stream`], except this method returns a flattened result
-    /// type, combining `Result` and [`Commit`] into a single [`ParseResult`].
+    /// Semantically equivalent to [`parse_stream`], except this method returns
+    /// a flattened result type, combining `Result` and [`Commit`] into a
+    /// single [`ParseResult`].
     ///
     /// [`Stream::uncons`]: super::stream::StreamOnce::uncons
     /// [`parse_stream`]: Parser::parse_stream
@@ -158,19 +160,22 @@ pub trait Parser<Input: Stream> {
         result
     }
 
-    /// Parses using the stream `input` by calling [`Stream::uncons`] one or more times.
+    /// Parses using the stream `input` by calling [`Stream::uncons`] one or
+    /// more times.
     ///
-    /// Specialized version of [`parse_stream`] which permits error value creation to be
-    /// skipped in the common case.
+    /// Specialized version of [`parse_stream`] which permits error value
+    /// creation to be skipped in the common case.
     ///
-    /// When this parser returns `PeekErr`, this method is allowed to return an empty
-    /// [`Error`]. The error value that would have been returned can instead be obtained by
-    /// calling [`add_error`]. This allows a parent parser such as `choice` to skip the creation of
-    /// an unnecessary error value, if an alternative parser succeeds.
+    /// When this parser returns `PeekErr`, this method is allowed to return an
+    /// empty [`Error`]. The error value that would have been returned can
+    /// instead be obtained by calling [`add_error`]. This allows a parent
+    /// parser such as `choice` to skip the creation of an unnecessary error
+    /// value, if an alternative parser succeeds.
     ///
-    /// Parsers should seek to implement this function instead of the above two if errors can be
-    /// encountered before consuming input. The default implementation always returns all errors,
-    /// with [`add_error`] being a no-op.
+    /// Parsers should seek to implement this function instead of the above two
+    /// if errors can be encountered before consuming input. The default
+    /// implementation always returns all errors, with [`add_error`] being a
+    /// no-op.
     ///
     /// [`Stream::uncons`]: super::stream::StreamOnce::uncons
     /// [`parse_stream`]: Parser::parse_stream
@@ -182,10 +187,10 @@ pub trait Parser<Input: Stream> {
         input: &mut Input,
     ) -> ParseResult<Self::Output, <Input as StreamOnce>::Error> {
         if input.is_partial() {
-            // If a partial parser were called from a non-partial parser (as it is here) we must
-            // reset the input to before the partial parser were called on errors that committed
-            // data as that parser's partial state was just temporary and it will not be able to
-            // resume itself
+            // If a partial parser were called from a non-partial parser (as it is here) we
+            // must reset the input to before the partial parser were called on
+            // errors that committed data as that parser's partial state was
+            // just temporary and it will not be able to resume itself
             let before = input.checkpoint();
             let result = self.parse_first(input, &mut Default::default());
             if let CommitErr(_) = result {
@@ -197,8 +202,8 @@ pub trait Parser<Input: Stream> {
         }
     }
 
-    /// Adds the first error that would normally be returned by this parser if it failed with an
-    /// `PeekErr` result.
+    /// Adds the first error that would normally be returned by this parser if
+    /// it failed with an `PeekErr` result.
     ///
     /// See [`parse_lazy`] for details.
     ///
@@ -227,11 +232,12 @@ pub trait Parser<Input: Stream> {
         result
     }
 
-    /// Parses using the stream `input` and allows itself to be resumed at a later point using
-    /// `parse_partial` by storing the necessary intermediate state in `state`.
+    /// Parses using the stream `input` and allows itself to be resumed at a
+    /// later point using `parse_partial` by storing the necessary
+    /// intermediate state in `state`.
     ///
-    /// Unlike `parse_partial` function this is allowed to assume that there is no partial state to
-    /// resume.
+    /// Unlike `parse_partial` function this is allowed to assume that there is
+    /// no partial state to resume.
     ///
     /// Internal API. May break without a semver bump
     /// Always overridden by the `parse_mode!` macro
@@ -245,8 +251,9 @@ pub trait Parser<Input: Stream> {
         self.parse_partial(input, state)
     }
 
-    /// Parses using the stream `input` and allows itself to be resumed at a later point using
-    /// `parse_partial` by storing the necessary intermediate state in `state`
+    /// Parses using the stream `input` and allows itself to be resumed at a
+    /// later point using `parse_partial` by storing the necessary
+    /// intermediate state in `state`
     ///
     /// Internal API. May break without a semver bump
     /// Always overridden by the `parse_mode!` macro
@@ -319,13 +326,15 @@ pub trait Parser<Input: Stream> {
 
     /// Returns how many parsers this parser contains
     ///
-    /// Internal API: This should not be implemented explicitly outside of combine.
+    /// Internal API: This should not be implemented explicitly outside of
+    /// combine.
     #[doc(hidden)]
     fn parser_count(&self) -> ErrorOffset {
         ErrorOffset(1)
     }
 
-    /// Internal API: This should not be implemented explicitly outside of combine.
+    /// Internal API: This should not be implemented explicitly outside of
+    /// combine.
     #[doc(hidden)]
     fn add_committed_expected_error(&mut self, _error: &mut Tracked<<Input as StreamOnce>::Error>) {
     }
@@ -431,11 +440,12 @@ pub trait Parser<Input: Stream> {
         (self, p)
     }
 
-    /// Returns a parser which attempts to parse using `self`. If `self` fails without committing
-    /// it tries to consume the same input using `p`.
+    /// Returns a parser which attempts to parse using `self`. If `self` fails
+    /// without committing it tries to consume the same input using `p`.
     ///
-    /// If you are looking to chain 3 or more parsers using `or` you may consider using the
-    /// [`choice!`] macro instead, which can be clearer and may result in a faster parser.
+    /// If you are looking to chain 3 or more parsers using `or` you may
+    /// consider using the [`choice!`] macro instead, which can be clearer
+    /// and may result in a faster parser.
     ///
     /// ```
     /// # extern crate combine;
@@ -468,13 +478,16 @@ pub trait Parser<Input: Stream> {
         or(self, p)
     }
 
-    /// Parses using `self` and then passes the value to `f` which returns a parser used to parse
-    /// the rest of the input.
+    /// Parses using `self` and then passes the value to `f` which returns a
+    /// parser used to parse the rest of the input.
     ///
-    /// Since the parser returned from `f` must have a single type it can be useful to use the
-    /// [`left`](Parser::left) and [`right`](Parser::right) methods to merge parsers of differing types into one.
+    /// Since the parser returned from `f` must have a single type it can be
+    /// useful to use the [`left`](Parser::left) and
+    /// [`right`](Parser::right) methods to merge parsers of differing types
+    /// into one.
     ///
-    /// If you are using partial parsing you may want to use [`then_partial`](Parser::then_partial) instead.
+    /// If you are using partial parsing you may want to use
+    /// [`then_partial`](Parser::then_partial) instead.
     ///
     /// ```
     /// # #![cfg(feature = "std")]
@@ -506,14 +519,18 @@ pub trait Parser<Input: Stream> {
         then(self, f)
     }
 
-    /// Variant of [`then`](Parser::then) which parses using `self` and then passes the value to `f` as a `&mut` reference.
+    /// Variant of [`then`](Parser::then) which parses using `self` and then
+    /// passes the value to `f` as a `&mut` reference.
     ///
-    /// Useful when doing partial parsing since it does not need to store the parser returned by
-    /// `f` in the partial state. Instead it will call `f` each to request a new parser each time
-    /// parsing resumes and that parser is needed.
+    /// Useful when doing partial parsing since it does not need to store the
+    /// parser returned by `f` in the partial state. Instead it will call
+    /// `f` each to request a new parser each time parsing resumes and that
+    /// parser is needed.
     ///
-    /// Since the parser returned from `f` must have a single type it can be useful to use the
-    /// [`left`](Parser::left) and [`right`](Parser::right) methods to merge parsers of differing types into one.
+    /// Since the parser returned from `f` must have a single type it can be
+    /// useful to use the [`left`](Parser::left) and
+    /// [`right`](Parser::right) methods to merge parsers of differing types
+    /// into one.
     ///
     /// ```
     /// # #![cfg(feature = "std")]
@@ -545,11 +562,13 @@ pub trait Parser<Input: Stream> {
         then_partial(self, f)
     }
 
-    /// Parses using `self` and then passes a reference to the value to `f` which returns a parser
-    /// used to parse the rest of the input. The value is then combined with the output of `f`.
+    /// Parses using `self` and then passes a reference to the value to `f`
+    /// which returns a parser used to parse the rest of the input. The
+    /// value is then combined with the output of `f`.
     ///
-    /// Since the parser returned from `f` must have a single type it can be useful to use the
-    /// `left` and `right` methods to merge parsers of differing types into one.
+    /// Since the parser returned from `f` must have a single type it can be
+    /// useful to use the `left` and `right` methods to merge parsers of
+    /// differing types into one.
     ///
     /// ```
     /// # #![cfg(feature = "std")]
@@ -611,7 +630,8 @@ pub trait Parser<Input: Stream> {
         map_input(self, f)
     }
 
-    /// Uses `f` to map over the output of `self`. If `f` returns an error the parser fails.
+    /// Uses `f` to map over the output of `self`. If `f` returns an error the
+    /// parser fails.
     ///
     /// ```
     /// # extern crate combine;
@@ -663,8 +683,9 @@ pub trait Parser<Input: Stream> {
         message(self, msg)
     }
 
-    /// Parses with `self` and if it fails without consuming any input any expected errors are
-    /// replaced by `msg`. `msg` is then used in error messages as "Expected `msg`".
+    /// Parses with `self` and if it fails without consuming any input any
+    /// expected errors are replaced by `msg`. `msg` is then used in error
+    /// messages as "Expected `msg`".
     ///
     /// ```
     /// # #![cfg(feature = "std")]
@@ -705,8 +726,8 @@ pub trait Parser<Input: Stream> {
         expected(self, msg)
     }
 
-    /// Parses with `self`, if it fails without consuming any input any expected errors that would
-    /// otherwise be emitted by `self` are suppressed.
+    /// Parses with `self`, if it fails without consuming any input any expected
+    /// errors that would otherwise be emitted by `self` are suppressed.
     ///
     /// ```
     /// # #![cfg(feature = "std")]
@@ -734,8 +755,9 @@ pub trait Parser<Input: Stream> {
         silent(self)
     }
 
-    /// Parses with `self` and applies `f` on the result if `self` parses successfully.
-    /// `f` may optionally fail with an error which is automatically converted to a `ParseError`.
+    /// Parses with `self` and applies `f` on the result if `self` parses
+    /// successfully. `f` may optionally fail with an error which is
+    /// automatically converted to a `ParseError`.
     ///
     /// ```
     /// # extern crate combine;
@@ -764,8 +786,9 @@ pub trait Parser<Input: Stream> {
         and_then(self, f)
     }
 
-    /// Creates an iterator from a parser and a state. Can be used as an alternative to [`many`]
-    /// when collecting directly into a `Extend` type is not desirable.
+    /// Creates an iterator from a parser and a state. Can be used as an
+    /// alternative to [`many`] when collecting directly into a `Extend`
+    /// type is not desirable.
     ///
     /// ```
     /// # extern crate combine;
@@ -794,8 +817,9 @@ pub trait Parser<Input: Stream> {
         Iter::new(self, FirstMode, input, Default::default())
     }
 
-    /// Creates an iterator from a parser and a state. Can be used as an alternative to [`many`]
-    /// when collecting directly into a `Extend` type is not desirable.
+    /// Creates an iterator from a parser and a state. Can be used as an
+    /// alternative to [`many`] when collecting directly into a `Extend`
+    /// type is not desirable.
     ///
     /// ```
     /// # extern crate combine;
@@ -830,8 +854,9 @@ pub trait Parser<Input: Stream> {
         Iter::new(self, mode, input, partial_state)
     }
 
-    /// Turns the parser into a trait object by putting it in a `Box`. Can be used to easily
-    /// return parsers from functions without naming the type.
+    /// Turns the parser into a trait object by putting it in a `Box`. Can be
+    /// used to easily return parsers from functions without naming the
+    /// type.
     ///
     /// ```
     /// # use combine::*;
@@ -860,8 +885,9 @@ pub trait Parser<Input: Stream> {
         Box::new(self)
     }
 
-    /// Wraps the parser into the [`Either`](combinator::Either) enum which allows combinators such as [`then`](Parser::then) to return
-    /// multiple different parser types (merging them to one)
+    /// Wraps the parser into the [`Either`](combinator::Either) enum which
+    /// allows combinators such as [`then`](Parser::then) to return multiple
+    /// different parser types (merging them to one)
     ///
     /// ```
     /// # extern crate combine;
@@ -894,8 +920,9 @@ pub trait Parser<Input: Stream> {
         Either::Left(self)
     }
 
-    /// Wraps the parser into the [`Either`](combinator::Either) enum which allows combinators such as [`then`](Parser::then) to return
-    /// multiple different parser types (merging them to one)
+    /// Wraps the parser into the [`Either`](combinator::Either) enum which
+    /// allows combinators such as [`then`](Parser::then) to return multiple
+    /// different parser types (merging them to one)
     ///
     /// ```
     /// # extern crate combine;
@@ -928,8 +955,8 @@ pub trait Parser<Input: Stream> {
         Either::Right(self)
     }
 
-    /// Marks errors produced inside the `self` parser with the span from the start of the parse to
-    /// the end of it.
+    /// Marks errors produced inside the `self` parser with the span from the
+    /// start of the parse to the end of it.
     ///
     /// [`p.spanned()`]: ../trait.Parser.html#method.spanned
     ///
@@ -955,7 +982,8 @@ pub trait Parser<Input: Stream> {
     }
 }
 
-/// Provides the `easy_parse` method which provides good error messages by default
+/// Provides the `easy_parse` method which provides good error messages by
+/// default
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub trait EasyParser<Input: Stream>: Parser<crate::easy::Stream<Input>>
@@ -963,12 +991,14 @@ where
     Input::Token: PartialEq,
     Input::Range: PartialEq,
 {
-    /// Entry point of the parser. Takes some input and tries to parse it, returning an easy to use
-    /// and format error if parsing did not succeed.
+    /// Entry point of the parser. Takes some input and tries to parse it,
+    /// returning an easy to use and format error if parsing did not
+    /// succeed.
     ///
-    /// Returns the parsed result and the remaining input if the parser succeeds, or a
-    /// This function wraps requires `Input == easy::Stream<Input>` which makes it return
-    /// return `easy::Errors` if an error occurs. Due to this wrapping it is recommended that the
+    /// Returns the parsed result and the remaining input if the parser
+    /// succeeds, or a This function wraps requires `Input ==
+    /// easy::Stream<Input>` which makes it return return `easy::Errors` if
+    /// an error occurs. Due to this wrapping it is recommended that the
     /// parser `Self` is written with a generic input type.
     ///
     /// ```
@@ -1100,10 +1130,11 @@ where
 
 /// Internal API. May break without a semver bump
 #[doc(hidden)]
-/// Specifies whether the parser must check for partial state that must be resumed
+/// Specifies whether the parser must check for partial state that must be
+/// resumed
 pub trait ParseMode: Copy {
-    /// If `true` then the parser has no previous state to resume otherwise the parser *might* have
-    /// state to resume which it must check.
+    /// If `true` then the parser has no previous state to resume otherwise the
+    /// parser *might* have state to resume which it must check.
     fn is_first(self) -> bool;
     /// Puts the mode into `first` parsing.
     fn set_first(&mut self);
@@ -1154,6 +1185,7 @@ impl ParseMode for FirstMode {
     fn is_first(self) -> bool {
         true
     }
+
     #[inline]
     fn set_first(&mut self) {}
 

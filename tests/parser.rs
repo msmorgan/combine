@@ -42,8 +42,6 @@ fn not_followed_by_does_not_consume_any_input() {
 
 #[cfg(feature = "std")]
 mod tests_std {
-    use super::*;
-
     use combine::{
         attempt, count, count_min_max, easy,
         easy::{Error, Errors},
@@ -60,6 +58,8 @@ mod tests_std {
         unexpected, value, EasyParser,
     };
 
+    use super::*;
+
     #[derive(Clone, PartialEq, Debug)]
     struct CloneOnly {
         s: String,
@@ -67,12 +67,11 @@ mod tests_std {
 
     #[test]
     fn token_clone_but_not_copy() {
-        // Verify we can use token() with a StreamSlice with an token type that is Clone but not
-        // Copy.
-        let input = &[
-            CloneOnly { s: "x".to_string() },
-            CloneOnly { s: "y".to_string() },
-        ][..];
+        // Verify we can use token() with a StreamSlice with an token type that is Clone
+        // but not Copy.
+        let input = &[CloneOnly { s: "x".to_string() }, CloneOnly {
+            s: "y".to_string(),
+        }][..];
         let result = token(CloneOnly { s: "x".to_string() }).easy_parse(input);
         assert_eq!(
             result,
@@ -93,7 +92,8 @@ mod tests_std {
         assert!(result_err.is_err());
     }
 
-    /// The expected combinator should retain only errors that are not `Expected`
+    /// The expected combinator should retain only errors that are not
+    /// `Expected`
     #[test]
     fn expected_retain_errors() {
         let mut parser = digit()
@@ -131,8 +131,8 @@ mod tests_std {
 
     #[test]
     fn message_tests() {
-        // Ensure message adds to both committed and empty errors, interacting with parse_lazy and
-        // parse_stream correctly on either side
+        // Ensure message adds to both committed and empty errors, interacting with
+        // parse_lazy and parse_stream correctly on either side
         let input = "hi";
 
         let mut ok = char('h').message("not expected");

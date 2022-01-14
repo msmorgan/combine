@@ -1,5 +1,6 @@
-//! Parser example for ISO8601 dates. This does not handle the entire specification but it should
-//! show the gist of it and be easy to extend to parse additional forms.
+//! Parser example for ISO8601 dates. This does not handle the entire
+//! specification but it should show the gist of it and be easy to extend to
+//! parse additional forms.
 
 use std::{
     env, fmt,
@@ -13,7 +14,6 @@ use combine::{
     stream::position,
     Parser, Stream,
 };
-
 #[cfg(feature = "std")]
 use combine::{
     stream::{easy, position::SourcePosition},
@@ -86,11 +86,7 @@ where
     )
         .map(|(sign, hour, minute)| {
             let offset = hour * 60 + minute.unwrap_or(0);
-            if sign == '-' {
-                -offset
-            } else {
-                offset
-            }
+            if sign == '-' { -offset } else { offset }
         });
 
     utc.or(offset)

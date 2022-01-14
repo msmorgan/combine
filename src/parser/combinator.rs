@@ -1,5 +1,10 @@
 //! Various combinators which do not fit anywhere else.
 
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, string::String, vec::Vec};
+
+#[cfg(feature = "alloc")]
+use crate::lib::any::Any;
 use crate::{
     error::{
         Info, ParseError,
@@ -12,12 +17,6 @@ use crate::{
     Parser,
 };
 
-#[cfg(feature = "alloc")]
-use alloc::{boxed::Box, string::String, vec::Vec};
-
-#[cfg(feature = "alloc")]
-use crate::lib::any::Any;
-
 #[derive(Copy, Clone)]
 pub struct NotFollowedBy<P>(P);
 impl<Input, O, P> Parser<Input> for NotFollowedBy<P>
@@ -29,6 +28,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -53,8 +55,6 @@ where
 
     fn add_committed_expected_error(&mut self, _error: &mut Tracked<<Input as StreamOnce>::Error>) {
     }
-
-    forward_parser!(Input, parser_count, 0);
 }
 
 /// Succeeds only if `parser` fails.
@@ -82,10 +82,9 @@ where
     NotFollowedBy(parser)
 }
 
-/*
- * TODO :: Rename `Try` to `Attempt`
- * Because this is public, it's name cannot be changed without also making a breaking change.
- */
+// TODO :: Rename `Try` to `Attempt`
+// Because this is public, it's name cannot be changed without also making a
+// breaking change.
 #[derive(Copy, Clone)]
 pub struct Try<P>(P);
 impl<Input, O, P> Parser<Input> for Try<P>
@@ -96,12 +95,15 @@ where
     type Output = O;
     type PartialState = P::PartialState;
 
+    parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_stream(&mut self, input: &mut Input) -> ParseResult<O, <Input as StreamOnce>::Error> {
         self.parse_lazy(input)
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_committed_mode<M>(
         &mut self,
@@ -136,12 +138,10 @@ where
             }
         }
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
-/// `attempt(p)` behaves as `p` except it always acts as `p` peeked instead of committed on its
-/// parse.
+/// `attempt(p)` behaves as `p` except it always acts as `p` peeked instead of
+/// committed on its parse.
 ///
 /// ```
 /// # extern crate combine;
@@ -175,6 +175,8 @@ where
     type Output = O;
     type PartialState = ();
 
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_lazy(&mut self, input: &mut Input) -> ParseResult<O, <Input as StreamOnce>::Error> {
         let before = input.checkpoint();
@@ -183,8 +185,6 @@ where
         let (o, _input) = ctry!(result);
         PeekOk(o)
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 /// `look_ahead(p)` acts as `p` but doesn't consume input on success.
@@ -223,6 +223,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -240,8 +243,6 @@ where
             PeekErr(err) => PeekErr(err),
         }
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 /// Equivalent to [`p.map(f)`].
@@ -268,6 +269,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -285,8 +289,6 @@ where
             PeekErr(err) => PeekErr(err),
         }
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 /// Equivalent to [`p.map_input(f)`].
@@ -313,6 +315,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -336,8 +341,6 @@ where
             CommitErr(err) => CommitErr(err),
         }
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 /// Equivalent to [`p.flat_map(f)`].
@@ -365,6 +368,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     fn parse_mode_impl<M>(
         &mut self,
         mode: M,
@@ -406,8 +412,6 @@ where
             CommitErr(err) => CommitErr(err),
         }
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 /// Equivalent to [`p.and_then(f)`].
@@ -506,6 +510,7 @@ where
     type PartialState = (F, P::PartialState);
 
     parse_mode!(Input);
+
     fn parse_mode_impl<M>(
         &mut self,
         mode: M,
@@ -528,8 +533,8 @@ where
     }
 }
 
-/// Constructs a parser which returns the tokens parsed by `parser` accumulated in
-/// `F: Extend<Input::Token>` instead of `P::Output`.
+/// Constructs a parser which returns the tokens parsed by `parser` accumulated
+/// in `F: Extend<Input::Token>` instead of `P::Output`.
 ///
 /// ```
 /// use combine::Parser;
@@ -562,6 +567,8 @@ where
     type Output = L::Output;
     type PartialState = Option<Either<L::PartialState, R::PartialState>>;
 
+    parse_mode!(Input);
+
     #[inline]
     fn parse_lazy(
         &mut self,
@@ -573,7 +580,6 @@ where
         }
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -592,14 +598,10 @@ where
                     }
                     Some(Either::Left(_)) => (),
                 }
-                x.parse_mode(
-                    mode,
-                    input,
-                    match state {
-                        Some(Either::Left(state)) => state,
-                        _ => unreachable!(),
-                    },
-                )
+                x.parse_mode(mode, input, match state {
+                    Some(Either::Left(state)) => state,
+                    _ => unreachable!(),
+                })
             }
             Either::Right(ref mut x) => {
                 match *state {
@@ -608,14 +610,10 @@ where
                     }
                     Some(Either::Right(_)) => (),
                 }
-                x.parse_mode(
-                    mode,
-                    input,
-                    match state {
-                        Some(Either::Right(state)) => state,
-                        _ => unreachable!(),
-                    },
-                )
+                x.parse_mode(mode, input, match state {
+                    Some(Either::Right(state)) => state,
+                    _ => unreachable!(),
+                })
             }
         }
     }
@@ -639,6 +637,10 @@ where
     type Output = <P as Parser<Input>>::Output;
     type PartialState = ();
 
+    parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_lazy(
         &mut self,
@@ -647,7 +649,6 @@ where
         self.0.parse_lazy(input)
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -660,8 +661,6 @@ where
     {
         self.0.parse_lazy(input)
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 pub fn no_partial<Input, P>(p: P) -> NoPartial<P>
@@ -682,6 +681,10 @@ where
     type Output = ();
     type PartialState = P::PartialState;
 
+    parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_lazy(
         &mut self,
@@ -690,7 +693,6 @@ where
         self.0.parse_lazy(input).map(|_| ())
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -703,8 +705,6 @@ where
     {
         self.0.parse_mode(mode, input, state).map(|_| ())
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 #[doc(hidden)]
@@ -735,6 +735,10 @@ where
     type Output = P::Output;
     type PartialState = AnyPartialState;
 
+    parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_lazy(
         &mut self,
@@ -743,7 +747,6 @@ where
         self.0.parse_lazy(input)
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_mode<M>(
         &mut self,
@@ -776,12 +779,10 @@ where
 
         result
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
-/// Returns a parser where `P::PartialState` is boxed. Useful as a way to avoid writing the type
-/// since it can get very large after combining a few parsers.
+/// Returns a parser where `P::PartialState` is boxed. Useful as a way to avoid
+/// writing the type since it can get very large after combining a few parsers.
 ///
 /// ```
 /// # #[macro_use]
@@ -838,6 +839,10 @@ where
     type Output = P::Output;
     type PartialState = AnySendPartialState;
 
+    parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_lazy(
         &mut self,
@@ -846,7 +851,6 @@ where
         self.0.parse_lazy(input)
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_mode<M>(
         &mut self,
@@ -879,12 +883,10 @@ where
 
         result
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
-/// Returns a parser where `P::PartialState` is boxed. Useful as a way to avoid writing the type
-/// since it can get very large after combining a few parsers.
+/// Returns a parser where `P::PartialState` is boxed. Useful as a way to avoid
+/// writing the type since it can get very large after combining a few parsers.
 ///
 /// ```
 /// # #[macro_use]
@@ -941,6 +943,10 @@ where
     type Output = P::Output;
     type PartialState = AnySendSyncPartialState;
 
+    parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_lazy(
         &mut self,
@@ -949,7 +955,6 @@ where
         self.0.parse_lazy(input)
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_mode<M>(
         &mut self,
@@ -982,12 +987,10 @@ where
 
         result
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
-/// Returns a parser where `P::PartialState` is boxed. Useful as a way to avoid writing the type
-/// since it can get very large after combining a few parsers.
+/// Returns a parser where `P::PartialState` is boxed. Useful as a way to avoid
+/// writing the type since it can get very large after combining a few parsers.
 ///
 /// ```
 /// # #[macro_use]
@@ -1035,6 +1038,8 @@ where
     type Output = O;
     type PartialState = R::PartialState;
 
+    parse_mode!(Input);
+
     fn parse_stream(&mut self, input: &mut Input) -> ParseResult<O, <Input as StreamOnce>::Error> {
         (self.0)().parse_stream(input)
     }
@@ -1042,8 +1047,6 @@ where
     fn parse_lazy(&mut self, input: &mut Input) -> ParseResult<O, <Input as StreamOnce>::Error> {
         (self.0)().parse_lazy(input)
     }
-
-    parse_mode!(Input);
 
     fn parse_committed_mode<M>(
         &mut self,
@@ -1078,12 +1081,13 @@ where
     }
 }
 
-/// Constructs the parser lazily on each `parse_*` call. Can be used to effectively reduce the
-/// size of deeply nested parsers as only the function producing the parser is stored.
+/// Constructs the parser lazily on each `parse_*` call. Can be used to
+/// effectively reduce the size of deeply nested parsers as only the function
+/// producing the parser is stored.
 ///
-/// NOTE: Expects that the parser returned is always the same one, if that is not the case the
-/// reported error may be wrong. If different parsers may be returned, use the [`factory`][] parser
-/// instead.
+/// NOTE: Expects that the parser returned is always the same one, if that is
+/// not the case the reported error may be wrong. If different parsers may be
+/// returned, use the [`factory`][] parser instead.
 ///
 /// [`factory`]: fn.factory.html
 pub fn lazy<Input, P, R>(p: P) -> Lazy<P>
@@ -1131,8 +1135,8 @@ where
     where
         M: ParseMode,
     {
-        // Always ask for a new parser except if we are in a partial call being resumed as we want
-        // to resume the same parser then
+        // Always ask for a new parser except if we are in a partial call being resumed
+        // as we want to resume the same parser then
         if mode.is_first() {
             self.1 = None;
         }
@@ -1152,9 +1156,9 @@ where
     }
 }
 
-/// Constructs the parser lazily on each `parse_*` call. This is similar to [`lazy`][] but it
-/// takes `Input` as an argument and allows different parsers to be returned on each call to
-/// `p` while still reporting the correct errors.
+/// Constructs the parser lazily on each `parse_*` call. This is similar to
+/// [`lazy`][] but it takes `Input` as an argument and allows different parsers
+/// to be returned on each call to `p` while still reporting the correct errors.
 ///
 /// [`lazy`]: fn.lazy.html
 ///
@@ -1297,6 +1301,8 @@ where
     type Output = O;
     type PartialState = S;
 
+    parse_mode!(Input);
+
     fn parse_stream(&mut self, input: &mut Input) -> ParseResult<O, <Input as StreamOnce>::Error> {
         let mut x = None;
         (self.0)(&mut |parser| x = Some(parser.parse_stream(input)));
@@ -1308,8 +1314,6 @@ where
         (self.0)(&mut |parser| x = Some(parser.parse_lazy(input)));
         x.expect("Parser")
     }
-
-    parse_mode!(Input);
 
     fn parse_mode_impl<M>(
         &mut self,
@@ -1340,20 +1344,22 @@ where
     }
 }
 
-/// Alias over `Opaque` where the function can be a plain function pointer (does not need to
-/// capture any values)
+/// Alias over `Opaque` where the function can be a plain function pointer (does
+/// not need to capture any values)
 pub type FnOpaque<Input, O, S = ()> =
     Opaque<fn(&mut dyn FnMut(&mut dyn Parser<Input, Output = O, PartialState = S>)), Input, O, S>;
 
-/// Creates a parser from a function which takes a function that are given the actual parser.
-/// Though convoluted this makes it possible to hide the concrete parser type without `Box` or
-/// losing the full information about the parser as is the case of [`parser`][].
+/// Creates a parser from a function which takes a function that are given the
+/// actual parser. Though convoluted this makes it possible to hide the concrete
+/// parser type without `Box` or losing the full information about the parser as
+/// is the case of [`parser`][].
 ///
-/// Since this hides the type this can also be useful for writing mutually recursive `impl Parser`
-/// parsers to break the otherwise arbitrarily large type that rustc creates internally.
+/// Since this hides the type this can also be useful for writing mutually
+/// recursive `impl Parser` parsers to break the otherwise arbitrarily large
+/// type that rustc creates internally.
 ///
-/// If you need a more general version (that does not need trait objects) try the [`parser!`][]
-/// macro.
+/// If you need a more general version (that does not need trait objects) try
+/// the [`parser!`][] macro.
 ///
 /// ```
 /// # #[macro_use]
@@ -1411,10 +1417,10 @@ where
 /// [`opaque`]: parser/combinator/fn.opaque.html
 #[macro_export]
 macro_rules! opaque {
-    ($e: expr) => {
+    ($e:expr) => {
         $crate::opaque!($e,);
     };
-    ($e: expr,) => {
+    ($e:expr,) => {
         $crate::parser::combinator::opaque(
             move |f: &mut dyn FnMut(&mut dyn $crate::Parser<_, Output = _, PartialState = _>)| {
                 f(&mut $e)
@@ -1485,9 +1491,11 @@ where
     InputInner: Stream + 'a,
 {
     type InputInner = InputInner;
+
     fn convert(&mut self, input: &'a mut Input) -> Result<InputInner, Input::Error> {
         (self.0)(input)
     }
+
     fn convert_error(&mut self, input: &'a mut Input, error: InputInner::Error) -> Input::Error {
         (self.1)(input, error)
     }
@@ -1523,6 +1531,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error, add_committed_expected_error, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -1536,8 +1547,9 @@ where
         let start = input.position().start;
         self.0.parse_mode(mode, input, state).map_err(|mut err| {
             let error_span = err.position();
-            // If an inner `spanned` combinator has already attached its span that will be more
-            // specific so only set a span if the current error has a position, not a span
+            // If an inner `spanned` combinator has already attached its span that will be
+            // more specific so only set a span if the current error has a
+            // position, not a span
             if error_span.start == error_span.end {
                 let end = input.position().end;
                 err.set_position(Span { start, end });
@@ -1545,8 +1557,6 @@ where
             err
         })
     }
-
-    forward_parser!(Input, add_error, add_committed_expected_error, 0);
 }
 
 /// Equivalent to [`p.spanned()`].

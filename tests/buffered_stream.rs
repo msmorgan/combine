@@ -79,8 +79,8 @@ fn shared_stream_insufficent_backtrack() {
     );
 }
 
-/// Test which checks that a stream which has ended does not repeat the last token in some cases in
-/// which case this test would loop forever
+/// Test which checks that a stream which has ended does not repeat the last
+/// token in some cases in which case this test would loop forever
 #[test]
 fn always_output_end_of_input_after_end_of_input() {
     let text = "10".chars();

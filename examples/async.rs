@@ -3,9 +3,6 @@
 
 use std::{cell::Cell, io::Cursor, rc::Rc, str};
 
-use futures_03_dep as futures;
-use tokio_dep as tokio;
-
 use bytes::{Buf, BytesMut};
 use combine::{
     error::{ParseError, StreamError},
@@ -19,7 +16,9 @@ use combine::{
     Parser,
 };
 use futures::prelude::*;
+use futures_03_dep as futures;
 use partial_io::PartialOp;
+use tokio_dep as tokio;
 use tokio_util::codec::{Decoder, FramedRead};
 
 // Workaround partial_io not working with tokio-0.2
@@ -48,8 +47,8 @@ impl Default for LanguageServerDecoder {
 ///
 /// { "some": "data" }
 /// ```
-// The `content_length_parses` parameter only exists to demonstrate that `content_length` only
-// gets parsed once per message
+// The `content_length_parses` parameter only exists to demonstrate that
+// `content_length` only gets parsed once per message
 fn decode_parser<'a, Input>(
     content_length_parses: Rc<Cell<i32>>,
 ) -> impl Parser<Input, Output = Vec<u8>, PartialState = AnyPartialState> + 'a
@@ -69,8 +68,8 @@ where
             x
         });
 
-    // `any_partial_state` boxes the state which hides the type and lets us store it in
-    // `self`
+    // `any_partial_state` boxes the state which hides the type and lets us store it
+    // in `self`
     any_partial_state(
         (
             skip_many(range(&b"\r\n"[..])),
@@ -84,8 +83,8 @@ where
 }
 
 impl Decoder for LanguageServerDecoder {
-    type Item = String;
     type Error = Box<dyn std::error::Error + Send + Sync>;
+    type Item = String;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         println!("Decoding `{:?}`", str::from_utf8(src).unwrap_or("NOT UTF8"));
@@ -146,12 +145,7 @@ impl Decoder for LanguageServerDecoder {
 
 #[tokio::main]
 async fn main() {
-    let input = "Content-Length: 6\r\n\
-                 \r\n\
-                 123456\r\n\
-                 Content-Length: 4\r\n\
-                 \r\n\
-                 true";
+    let input = "Content-Length: 6\r\n\r\n123456\r\nContent-Length: 4\r\n\r\ntrue";
 
     let seq = vec![
         PartialOp::Limited(20),
@@ -160,8 +154,8 @@ async fn main() {
         PartialOp::Limited(3),
     ];
     let reader = &mut Cursor::new(input.as_bytes());
-    // Using the `partial_io` crate we emulate the partial reads that would happen when reading
-    // asynchronously from an io device.
+    // Using the `partial_io` crate we emulate the partial reads that would happen
+    // when reading asynchronously from an io device.
     let partial_reader = PartialAsyncRead::new(reader, seq);
 
     let decoder = LanguageServerDecoder::default();

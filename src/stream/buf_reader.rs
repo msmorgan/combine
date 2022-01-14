@@ -1,5 +1,8 @@
+#[cfg(feature = "futures-03")]
+use std::future::Future;
 use std::io::{self, BufRead, Read};
-
+#[cfg(any(feature = "futures-03", feature = "tokio-02", feature = "tokio-03"))]
+use std::mem::MaybeUninit;
 #[cfg(any(
     feature = "futures-03",
     feature = "tokio-02",
@@ -7,29 +10,18 @@ use std::io::{self, BufRead, Read};
     feature = "tokio"
 ))]
 use std::pin::Pin;
-
-#[cfg(any(feature = "futures-03", feature = "tokio-02", feature = "tokio-03"))]
-use std::mem::MaybeUninit;
-
 #[cfg(feature = "futures-core-03")]
 use std::task::{Context, Poll};
 
-#[cfg(feature = "futures-03")]
-use std::future::Future;
-
 use bytes::{Buf, BufMut, BytesMut};
-
-#[cfg(feature = "pin-project-lite")]
-use pin_project_lite::pin_project;
-
-#[cfg(feature = "tokio-03")]
-use tokio_03_dep::io::AsyncBufRead as _;
-
-#[cfg(feature = "tokio")]
-use tokio_dep::io::AsyncBufRead as _;
-
 #[cfg(feature = "futures-core-03")]
 use futures_core_03::ready;
+#[cfg(feature = "pin-project-lite")]
+use pin_project_lite::pin_project;
+#[cfg(feature = "tokio-03")]
+use tokio_03_dep::io::AsyncBufRead as _;
+#[cfg(feature = "tokio")]
+use tokio_dep::io::AsyncBufRead as _;
 
 #[cfg(feature = "pin-project-lite")]
 pin_project! {
@@ -45,7 +37,8 @@ pin_project! {
 }
 
 #[cfg(not(feature = "pin-project-lite"))]
-/// `BufReader` used by `Decoder` when it is constructed with [`Decoder::new_bufferless`][]
+/// `BufReader` used by `Decoder` when it is constructed with
+/// [`Decoder::new_bufferless`][]
 ///
 /// [`Decoder::new_bufferless`]: ../decoder/struct.Decoder.html#method.new_bufferless
 #[derive(Debug)]
@@ -55,8 +48,8 @@ pub struct BufReader<R> {
 }
 
 impl<R> BufReader<R> {
-    /// Creates a new `BufReader` with a default buffer capacity. The default is currently 8 KB,
-    /// but may change in the future.
+    /// Creates a new `BufReader` with a default buffer capacity. The default is
+    /// currently 8 KB, but may change in the future.
     pub fn new(inner: R) -> Self {
         Self::with_capacity(8096, inner)
     }
@@ -99,7 +92,8 @@ impl<R> BufReader<R> {
 
     /// Returns a reference to the internally buffered data.
     ///
-    /// Unlike `fill_buf`, this will not attempt to fill the buffer if it is empty.
+    /// Unlike `fill_buf`, this will not attempt to fill the buffer if it is
+    /// empty.
     pub fn buffer(&self) -> &[u8] {
         &self.buf
     }
@@ -361,7 +355,8 @@ where
         buf.reserve(8 * 1024);
     }
 
-    // Copy of tokio's poll_read_buf method (but it has to force initialize the buffer)
+    // Copy of tokio's poll_read_buf method (but it has to force initialize the
+    // buffer)
     let n = {
         let bs = buf.chunk_mut();
 
@@ -395,9 +390,11 @@ impl bytes_05::BufMut for Bytes05<'_> {
     fn remaining_mut(&self) -> usize {
         self.0.remaining_mut()
     }
+
     unsafe fn advance_mut(&mut self, cnt: usize) {
         self.0.advance_mut(cnt)
     }
+
     fn bytes_mut(&mut self) -> &mut [MaybeUninit<u8>] {
         unsafe { &mut *(self.0.chunk_mut() as *mut _ as *mut [MaybeUninit<u8>]) }
     }
@@ -767,8 +764,6 @@ impl<R: Read> BufRead for BufReader<R> {
 #[cfg(test)]
 #[cfg(feature = "tokio-02")]
 mod tests {
-    use super::{BufReader, Bufferless, CombineRead};
-
     use std::{io, pin::Pin};
 
     use bytes_05::BytesMut;
@@ -776,6 +771,8 @@ mod tests {
         self as tokio,
         io::{AsyncRead, AsyncReadExt},
     };
+
+    use super::{BufReader, Bufferless, CombineRead};
 
     impl<R: AsyncRead> BufReader<R> {
         async fn extend_buf_tokio_02(mut self: Pin<&mut Self>) -> io::Result<usize> {
@@ -832,8 +829,6 @@ mod tests {
 #[cfg(test)]
 #[cfg(feature = "tokio")]
 mod tests_tokio_1 {
-    use super::{BufReader, Bufferless, CombineRead};
-
     use std::{io, pin::Pin};
 
     use bytes::BytesMut;
@@ -841,6 +836,8 @@ mod tests_tokio_1 {
         self as tokio,
         io::{AsyncRead, AsyncReadExt},
     };
+
+    use super::{BufReader, Bufferless, CombineRead};
 
     impl<R: AsyncRead> BufReader<R> {
         async fn extend_buf_tokio(mut self: Pin<&mut Self>) -> io::Result<usize> {
@@ -896,9 +893,9 @@ mod tests_tokio_1 {
 
 #[cfg(test)]
 mod tests_sync {
-    use super::{BufReader, Bufferless, CombineSyncRead};
-
     use std::io::Read;
+
+    use super::{BufReader, Bufferless, CombineSyncRead};
 
     #[test]
     #[allow(clippy::unused_io_amount)]

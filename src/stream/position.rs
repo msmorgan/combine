@@ -1,3 +1,5 @@
+#[cfg(feature = "std")]
+use crate::stream::read;
 use crate::{
     error::{ParseError, ParseResult, StreamError},
     lib::fmt,
@@ -6,9 +8,6 @@ use crate::{
         StreamOnce,
     },
 };
-
-#[cfg(feature = "std")]
-use crate::stream::read;
 
 /// Trait for tracking the current position of a `Stream`.
 pub trait Positioner<Item> {
@@ -58,8 +57,8 @@ impl<R> DefaultPositioned for read::Stream<R> {
     type Positioner = IndexPositioner;
 }
 
-/// The `Stream<Input>` struct maintains the current position in the stream `Input` using
-/// the `Positioner` trait to track the position.
+/// The `Stream<Input>` struct maintains the current position in the stream
+/// `Input` using the `Positioner` trait to track the position.
 ///
 /// ```
 /// # #![cfg(feature = "std")]
@@ -105,7 +104,8 @@ where
     Input: StreamOnce + DefaultPositioned,
     Input::Positioner: Positioner<Input::Token>,
 {
-    /// Creates a new `Stream<Input, X>` from an input stream and its default positioner.
+    /// Creates a new `Stream<Input, X>` from an input stream and its default
+    /// positioner.
     pub fn new(input: Input) -> Stream<Input, Input::Positioner> {
         Stream::with_positioner(input, Input::Positioner::default())
     }
@@ -133,10 +133,10 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, X::Position, StreamError = S>
         + ParseError<Input::Token, Input::Range, Input::Position, StreamError = S>,
 {
-    type Token = Input::Token;
-    type Range = Input::Range;
-    type Position = X::Position;
     type Error = Input::Error;
+    type Position = X::Position;
+    type Range = Input::Range;
+    type Token = Input::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<Input::Token, StreamErrorFor<Self>> {
@@ -156,8 +156,8 @@ where
     Item: Clone,
     T: ?Sized + Positioner<Item>,
 {
-    type Position = T::Position;
     type Checkpoint = T::Checkpoint;
+    type Position = T::Position;
 
     #[inline]
     fn position(&self) -> T::Position {
@@ -191,9 +191,10 @@ where
     }
 }
 
-/// The `IndexPositioner<Item, Range>` struct maintains the current index into the stream `Input`.  The
-/// initial index is index 0.  Each `Item` committed increments the index by 1; each `range` committed
-/// increments the position by `range.len()`.
+/// The `IndexPositioner<Item, Range>` struct maintains the current index into
+/// the stream `Input`.  The initial index is index 0.  Each `Item` committed
+/// increments the index by 1; each `range` committed increments the position by
+/// `range.len()`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct IndexPositioner(usize);
 
@@ -201,8 +202,8 @@ impl<Item> Positioner<Item> for IndexPositioner
 where
     Item: Clone,
 {
-    type Position = usize;
     type Checkpoint = Self;
+    type Position = usize;
 
     #[inline]
     fn position(&self) -> usize {
@@ -273,8 +274,8 @@ impl SourcePosition {
 }
 
 impl Positioner<char> for SourcePosition {
-    type Position = SourcePosition;
     type Checkpoint = Self;
+    type Position = SourcePosition;
 
     #[inline]
     fn position(&self) -> SourcePosition {
@@ -302,8 +303,8 @@ impl Positioner<char> for SourcePosition {
 }
 
 impl Positioner<u8> for SourcePosition {
-    type Position = SourcePosition;
     type Checkpoint = Self;
+    type Position = SourcePosition;
 
     #[inline]
     fn position(&self) -> SourcePosition {
@@ -409,12 +410,14 @@ where
     Input::Error: ParseError<Input::Token, Input::Range, Input::Position, StreamError = S>,
 {
     type Checkpoint = Stream<Input::Checkpoint, X::Checkpoint>;
+
     fn checkpoint(&self) -> Self::Checkpoint {
         Stream {
             input: self.input.checkpoint(),
             positioner: self.positioner.checkpoint(),
         }
     }
+
     fn reset(&mut self, checkpoint: Self::Checkpoint) -> Result<(), Self::Error> {
         self.input.reset(checkpoint.input)?;
         self.positioner.reset(checkpoint.positioner);
@@ -425,9 +428,8 @@ where
 #[cfg(all(feature = "std", test))]
 mod tests {
 
-    use crate::Parser;
-
     use super::*;
+    use crate::Parser;
 
     #[test]
     fn test_positioner() {

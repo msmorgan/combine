@@ -7,17 +7,15 @@ use std::{
     io::{self, Read},
 };
 
+#[cfg(feature = "std")]
+use combine::stream::easy;
+#[cfg(feature = "std")]
+use combine::stream::position::SourcePosition;
 use combine::{
     parser::{byte::spaces, char::space},
     stream::position,
     *,
 };
-
-#[cfg(feature = "std")]
-use combine::stream::easy;
-
-#[cfg(feature = "std")]
-use combine::stream::position::SourcePosition;
 
 enum Error<E> {
     Io(io::Error),
@@ -60,8 +58,8 @@ where
     Input: Stream<Token = char>,
 {
     let comment = (token(';'), skip_many(satisfy(|c| c != '\n'))).map(|_| ());
-    // Wrap the `spaces().or(comment)` in `skip_many` so that it skips alternating whitespace and
-    // comments
+    // Wrap the `spaces().or(comment)` in `skip_many` so that it skips alternating
+    // whitespace and comments
     skip_many(spaces().or(comment))
 }
 

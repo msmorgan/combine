@@ -1,5 +1,5 @@
-// `impl Trait` is not required for this parser but we use to to show that it can be used to
-// significantly simplify things
+// `impl Trait` is not required for this parser but we use to to show that it
+// can be used to significantly simplify things
 
 #![cfg(feature = "std")]
 
@@ -167,9 +167,8 @@ where
         lex(string("null").map(|_| Value::Null)),
     ))))
 }
-//
-// // We need to use `parser!` to break the recursive use of `value` to prevent the returned parser
-// // from containing itself
+// // We need to use `parser!` to break the recursive use of `value` to prevent
+// the returned parser // from containing itself
 // parser! {
 //     #[inline]
 //     fn json_value_[Input]()(Input) -> Value

@@ -1,11 +1,8 @@
-use crate::lib::fmt;
-
 #[cfg(feature = "std")]
 use std::error::Error as StdError;
 
-use crate::{stream::StreamOnce, ErrorOffset};
-
 use self::ParseResult::*;
+use crate::{lib::fmt, stream::StreamOnce, ErrorOffset};
 
 pub(crate) trait ResultExt<E, T> {
     fn committed(self) -> ParseResult<E, T>;
@@ -39,8 +36,8 @@ macro_rules! ctry {
 
 /// Trait for types which can be used to construct error information.
 ///
-/// To call functions expecting this trait, use the wrapper types defined in this module
-/// `Token`, `Range`, `Format` or `Static`/`&'static str`
+/// To call functions expecting this trait, use the wrapper types defined in
+/// this module `Token`, `Range`, `Format` or `Static`/`&'static str`
 pub trait ErrorInfo<'s, T, R> {
     type Format: fmt::Display;
 
@@ -53,6 +50,7 @@ where
     F: ErrorInfo<'s, T, R>,
 {
     type Format = F::Format;
+
     fn into_info(&'s self) -> Info<T, R, Self::Format> {
         (**self).into_info()
     }
@@ -73,6 +71,7 @@ where
     F: fmt::Display + 's,
 {
     type Format = &'s F;
+
     fn into_info(&'s self) -> Info<T, R, <Self as ErrorInfo<'_, T, R>>::Format> {
         match self {
             Info::Token(b) => Info::Token(b.clone()),
@@ -91,6 +90,7 @@ impl<R, F> From<char> for Info<char, R, F> {
 
 impl<'s, R> ErrorInfo<'s, char, R> for char {
     type Format = &'static str;
+
     fn into_info(&self) -> Info<char, R, Self::Format> {
         Info::Token(*self)
     }
@@ -104,6 +104,7 @@ impl<T, R, F> From<&'static str> for Info<T, R, F> {
 
 impl<'s, T, R> ErrorInfo<'s, T, R> for &'static str {
     type Format = &'static str;
+
     fn into_info(&self) -> Info<T, R, Self::Format> {
         Info::Static(*self)
     }
@@ -117,6 +118,7 @@ impl<R, F> From<u8> for Info<u8, R, F> {
 
 impl<R> ErrorInfo<'_, Self, R> for u8 {
     type Format = &'static str;
+
     fn into_info(&self) -> Info<Self, R, Self::Format> {
         Info::Token(*self)
     }
@@ -136,6 +138,7 @@ where
     T: Clone,
 {
     type Format = &'static str;
+
     fn into_info(&'s self) -> Info<T, R, Self::Format> {
         Info::Token(self.0.clone())
     }
@@ -155,6 +158,7 @@ where
     R: Clone,
 {
     type Format = &'static str;
+
     fn into_info(&'s self) -> Info<T, R, Self::Format> {
         Info::Range(self.0.clone())
     }
@@ -175,6 +179,7 @@ where
 
 impl<'s, T, R> ErrorInfo<'s, T, R> for Static {
     type Format = &'static str;
+
     fn into_info(&'s self) -> Info<T, R, Self::Format> {
         Info::Static(self.0)
     }
@@ -199,23 +204,27 @@ where
     F: fmt::Display + 's,
 {
     type Format = &'s F;
+
     fn into_info(&'s self) -> Info<T, R, Self::Format> {
         Info::Format(&self.0)
     }
 }
 
-/// Enum used to indicate if a parser committed any items of the stream it was given as an input.
+/// Enum used to indicate if a parser committed any items of the stream it was
+/// given as an input.
 ///
-/// This is used by parsers such as `or` and `choice` to determine if they should try to parse
-/// with another parser as they will only be able to provide good error reporting if the preceding
-/// parser did not commit to the parse.
+/// This is used by parsers such as `or` and `choice` to determine if they
+/// should try to parse with another parser as they will only be able to provide
+/// good error reporting if the preceding parser did not commit to the parse.
 #[derive(Clone, PartialEq, Debug, Copy)]
 pub enum Commit<T> {
-    /// Constructor indicating that the parser has committed to this parse. If a parser after this fails,
-    /// other parser alternatives will not be attempted (`CommitErr` will be returned)
+    /// Constructor indicating that the parser has committed to this parse. If a
+    /// parser after this fails, other parser alternatives will not be
+    /// attempted (`CommitErr` will be returned)
     Commit(T),
-    /// Constructor indicating that the parser has not committed to this parse. If a parser after this fails,
-    /// other parser alternatives will be attempted (`EmptyErr` will be returned)
+    /// Constructor indicating that the parser has not committed to this parse.
+    /// If a parser after this fails, other parser alternatives will be
+    /// attempted (`EmptyErr` will be returned)
     Peek(T),
 }
 
@@ -335,6 +344,7 @@ impl<T> Commit<T> {
             Commit::Peek(x) => f(x),
         }
     }
+
     pub fn combine_commit<F, U, E>(self, f: F) -> ParseResult<U, E>
     where
         F: FnOnce(T) -> ParseResult<U, E>,
@@ -352,18 +362,19 @@ impl<T> Commit<T> {
     }
 }
 
-/// A type alias over the specific `Result` type used by parsers to indicate whether they were
-/// successful or not.
+/// A type alias over the specific `Result` type used by parsers to indicate
+/// whether they were successful or not.
 /// `O` is the type that is output on success.
 /// `Input` is the specific stream type used in the parser.
 pub type StdParseResult<O, Input> =
     Result<(O, Commit<()>), Commit<Tracked<<Input as StreamOnce>::Error>>>;
 pub type StdParseResult2<O, E> = Result<(O, Commit<()>), Commit<Tracked<E>>>;
 
-/// `StreamError` represents a single error returned from a `Stream` or a `Parser`.
+/// `StreamError` represents a single error returned from a `Stream` or a
+/// `Parser`.
 ///
-/// Usually multiple instances of `StreamError` is composed into a `ParseError` to build the final
-/// error value.
+/// Usually multiple instances of `StreamError` is composed into a `ParseError`
+/// to build the final error value.
 pub trait StreamError<Item, Range>: Sized {
     fn unexpected_token(token: Item) -> Self;
     fn unexpected_range(token: Range) -> Self;
@@ -441,9 +452,9 @@ pub trait StreamError<Item, Range>: Sized {
 
     /// Converts `self` into a different `StreamError` type.
     ///
-    /// This should aim to preserve as much information as possible into the returned `T` value but
-    /// if `Self` ignores some information passed to it using one of the constructors that
-    /// information is naturally lost.
+    /// This should aim to preserve as much information as possible into the
+    /// returned `T` value but if `Self` ignores some information passed to
+    /// it using one of the constructors that information is naturally lost.
     fn into_other<T>(self) -> T
     where
         T: StreamError<Item, Range>;
@@ -451,14 +462,15 @@ pub trait StreamError<Item, Range>: Sized {
 
 /// Trait which defines a combine parse error.
 ///
-/// A parse error is composed of zero or more `StreamError` instances which gets added to it as
-/// errors are encountered during parsing.
+/// A parse error is composed of zero or more `StreamError` instances which gets
+/// added to it as errors are encountered during parsing.
 pub trait ParseError<Item, Range, Position>: Sized + PartialEq {
     type StreamError: StreamError<Item, Range>;
 
     /// Constructs an empty error.
     ///
-    /// An empty error is expected to be cheap to create as it is frequently created and discarded.
+    /// An empty error is expected to be cheap to create as it is frequently
+    /// created and discarded.
     fn empty(position: Position) -> Self;
 
     /// Creates a `ParseError` from a single `Self::StreamError`
@@ -476,17 +488,19 @@ pub trait ParseError<Item, Range, Position>: Sized + PartialEq {
     /// Sets the position of this `ParseError`
     fn set_position(&mut self, position: Position);
 
-    /// Merges two errors. If they exist at the same position the errors of `other` are
-    /// added to `self` (using the semantics of `add`). If they are not at the same
-    /// position the error furthest ahead are returned, ignoring the other `ParseError`.
+    /// Merges two errors. If they exist at the same position the errors of
+    /// `other` are added to `self` (using the semantics of `add`). If they
+    /// are not at the same position the error furthest ahead are returned,
+    /// ignoring the other `ParseError`.
     fn merge(self, other: Self) -> Self {
         other
     }
 
     /// Adds a `StreamError` to `self`.
     ///
-    /// It is up to each individual error type to define what adding an error does, some may push
-    /// it to a vector while others may only keep `self` or `err` to avoid allocation
+    /// It is up to each individual error type to define what adding an error
+    /// does, some may push it to a vector while others may only keep `self`
+    /// or `err` to avoid allocation
     fn add(&mut self, err: Self::StreamError);
 
     fn add_expected<E>(&mut self, info: E)
@@ -585,10 +599,12 @@ impl<Item, Range> StreamError<Item, Range> for UnexpectedParse {
     fn unexpected_token(_: Item) -> Self {
         UnexpectedParse::Unexpected
     }
+
     #[inline]
     fn unexpected_range(_: Range) -> Self {
         UnexpectedParse::Unexpected
     }
+
     #[inline]
     fn unexpected_format<T>(_: T) -> Self
     where
@@ -601,10 +617,12 @@ impl<Item, Range> StreamError<Item, Range> for UnexpectedParse {
     fn expected_token(_: Item) -> Self {
         UnexpectedParse::Unexpected
     }
+
     #[inline]
     fn expected_range(_: Range) -> Self {
         UnexpectedParse::Unexpected
     }
+
     #[inline]
     fn expected_format<T>(_: T) -> Self
     where
@@ -612,6 +630,7 @@ impl<Item, Range> StreamError<Item, Range> for UnexpectedParse {
     {
         UnexpectedParse::Unexpected
     }
+
     #[inline]
     fn message_format<T>(_: T) -> Self
     where
@@ -619,10 +638,12 @@ impl<Item, Range> StreamError<Item, Range> for UnexpectedParse {
     {
         UnexpectedParse::Unexpected
     }
+
     #[inline]
     fn message_token(_: Item) -> Self {
         UnexpectedParse::Unexpected
     }
+
     #[inline]
     fn message_range(_: Range) -> Self {
         UnexpectedParse::Unexpected
@@ -655,6 +676,7 @@ where
     Position: Default,
 {
     type StreamError = Self;
+
     #[inline]
     fn empty(_position: Position) -> Self {
         UnexpectedParse::Unexpected
@@ -769,10 +791,12 @@ impl<Item, Range> StreamError<Item, Range> for StringStreamError {
     fn unexpected_token(_: Item) -> Self {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn unexpected_range(_: Range) -> Self {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn unexpected_format<T>(_msg: T) -> Self
     where
@@ -785,10 +809,12 @@ impl<Item, Range> StreamError<Item, Range> for StringStreamError {
     fn expected_token(_: Item) -> Self {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn expected_range(_: Range) -> Self {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn expected_format<T>(_: T) -> Self
     where
@@ -796,6 +822,7 @@ impl<Item, Range> StreamError<Item, Range> for StringStreamError {
     {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn message_format<T>(_: T) -> Self
     where
@@ -803,14 +830,17 @@ impl<Item, Range> StreamError<Item, Range> for StringStreamError {
     {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn message_token(_: Item) -> Self {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn message_range(_: Range) -> Self {
         StringStreamError::UnexpectedParse
     }
+
     fn message_static_message(msg: &'static str) -> Self {
         if msg == CHAR_BOUNDARY_ERROR_MESSAGE {
             StringStreamError::CharacterBoundary
@@ -818,14 +848,17 @@ impl<Item, Range> StreamError<Item, Range> for StringStreamError {
             StringStreamError::UnexpectedParse
         }
     }
+
     #[inline]
     fn end_of_input() -> Self {
         StringStreamError::Eoi
     }
+
     #[inline]
     fn is_unexpected_end_of_input(&self) -> bool {
         *self == StringStreamError::Eoi
     }
+
     #[inline]
     fn into_other<T>(self) -> T
     where
@@ -844,10 +877,12 @@ where
     Position: Default,
 {
     type StreamError = Self;
+
     #[inline]
     fn empty(_position: Position) -> Self {
         StringStreamError::UnexpectedParse
     }
+
     #[inline]
     fn from_error(_: Position, err: Self::StreamError) -> Self {
         err
@@ -919,9 +954,9 @@ impl<Item, Range> StreamErrorInto<Item, Range> for StringStreamError {
     }
 }
 
-/// Error wrapper which lets parsers track which parser in a sequence of sub-parsers has emitted
-/// the error. `Tracked::from` can be used to construct this and it should otherwise be
-/// ignored outside of combine.
+/// Error wrapper which lets parsers track which parser in a sequence of
+/// sub-parsers has emitted the error. `Tracked::from` can be used to construct
+/// this and it should otherwise be ignored outside of combine.
 #[derive(Clone, PartialEq, Debug, Copy)]
 pub struct Tracked<E> {
     /// The error returned
@@ -940,15 +975,17 @@ impl<E> From<E> for Tracked<E> {
 }
 
 /// A `Result` type which has the committed status flattened into the result.
-/// Conversions to and from `std::result::Result` can be done using `result.into()` or
-/// `From::from(result)`
+/// Conversions to and from `std::result::Result` can be done using
+/// `result.into()` or `From::from(result)`
 #[derive(Clone, PartialEq, Debug, Copy)]
 pub enum ParseResult<T, E> {
-    /// The parser has succeeded and has committed to this parse. If a parser after this fails,
-    /// other parser alternatives will not be attempted (`CommitErr` will be returned)
+    /// The parser has succeeded and has committed to this parse. If a parser
+    /// after this fails, other parser alternatives will not be attempted
+    /// (`CommitErr` will be returned)
     CommitOk(T),
-    /// The parser has succeeded and has not committed to this parse. If a parser after this fails,
-    /// other parser alternatives will be attempted (`PeekErr` will be returned)
+    /// The parser has succeeded and has not committed to this parse. If a
+    /// parser after this fails, other parser alternatives will be attempted
+    /// (`PeekErr` will be returned)
     PeekOk(T),
     /// The parser failed other parse alternatives will not be attempted.
     CommitErr(E),
@@ -1084,11 +1121,11 @@ mod tests_std {
 
     #[test]
     fn parse_clone_but_not_copy() {
-        // This verifies we can parse slice references with an token type that is Clone but not Copy.
-        let input = &[
-            CloneOnly { s: "x".to_string() },
-            CloneOnly { s: "y".to_string() },
-        ][..];
+        // This verifies we can parse slice references with an token type that is Clone
+        // but not Copy.
+        let input = &[CloneOnly { s: "x".to_string() }, CloneOnly {
+            s: "y".to_string(),
+        }][..];
         let result = crate::parser::range::take_while(|c: CloneOnly| c.s == "x").parse(input);
         assert_eq!(
             result,

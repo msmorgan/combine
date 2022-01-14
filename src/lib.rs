@@ -1,22 +1,24 @@
-//! This crate contains parser combinators, roughly based on the Haskell libraries
-//! [parsec](http://hackage.haskell.org/package/parsec) and
+//! This crate contains parser combinators, roughly based on the Haskell
+//! libraries [parsec](http://hackage.haskell.org/package/parsec) and
 //! [attoparsec](https://hackage.haskell.org/package/attoparsec).
 //!
-//! A parser in this library can be described as a function which takes some input and if it
-//! is successful, returns a value together with the remaining input.
-//! A parser combinator is a function which takes one or more parsers and returns a new parser.
-//! For instance the [`many`] parser can be used to convert a parser for single digits into one that
-//! parses multiple digits. By modeling parsers in this way it becomes easy to compose complex
-//! parsers in an almost declarative way.
+//! A parser in this library can be described as a function which takes some
+//! input and if it is successful, returns a value together with the remaining
+//! input. A parser combinator is a function which takes one or more parsers and
+//! returns a new parser. For instance the [`many`] parser can be used to
+//! convert a parser for single digits into one that parses multiple digits. By
+//! modeling parsers in this way it becomes easy to compose complex parsers in
+//! an almost declarative way.
 //!
 //! # Overview
 //!
 //! `combine` limits itself to creating [LL(1) parsers](https://en.wikipedia.org/wiki/LL_parser)
-//! (it is possible to opt-in to LL(k) parsing using the [`attempt`] combinator) which makes the
-//! parsers easy to reason about in both function and performance while sacrificing
-//! some generality. In addition to you being able to reason better about the parsers you
-//! construct `combine` the library also takes the knowledge of being an LL parser and uses it to
-//! automatically construct good error messages.
+//! (it is possible to opt-in to LL(k) parsing using the [`attempt`] combinator)
+//! which makes the parsers easy to reason about in both function and
+//! performance while sacrificing some generality. In addition to you being able
+//! to reason better about the parsers you construct `combine` the library also
+//! takes the knowledge of being an LL parser and uses it to automatically
+//! construct good error messages.
 //!
 //! ```rust
 //! extern crate combine;
@@ -39,18 +41,23 @@
 //!
 //! This library is currently split into a few core modules:
 //!
-//! * [`parser`][mod parser] is where you will find all the parsers that combine provides. It contains the core
-//! [`Parser`] trait as well as several submodules such as `sequence` or `choice` which each
-//! contain several parsers aimed at a specific niche.
+//! * [`parser`][mod parser] is where you will find all the parsers that combine
+//!   provides. It contains the core
+//! [`Parser`] trait as well as several submodules such as `sequence` or
+//! `choice` which each contain several parsers aimed at a specific niche.
 //!
-//! * [`stream`] contains the second most important trait next to [`Parser`]. Streams represent the
+//! * [`stream`] contains the second most important trait next to [`Parser`].
+//!   Streams represent the
 //! data source which is being parsed such as `&[u8]`, `&str` or iterators.
 //!
-//! * [`easy`] contains combine's default "easy" error and stream handling. If you use the
+//! * [`easy`] contains combine's default "easy" error and stream handling. If
+//!   you use the
 //! `easy_parse` method to start your parsing these are the types that are used.
 //!
-//! * [`error`] contains the types and traits that make up combine's error handling. Unless you
-//! need to customize the errors your parsers return you should not need to use this module much.
+//! * [`error`] contains the types and traits that make up combine's error
+//!   handling. Unless you
+//! need to customize the errors your parsers return you should not need to use
+//! this module much.
 //!
 //!
 //! # Examples
@@ -81,13 +88,14 @@
 //! }
 //! ```
 //!
-//! If we need a parser that is mutually recursive or if we want to export a reusable parser the
-//! [`parser!`] macro can be used. In effect it makes it possible to return a parser without naming
-//! the type of the parser (which can be very large due to combine's trait based approach). While
-//! it is possible to do avoid naming the type without the macro those solutions require either allocation
-//! (`Box<dyn Parser< Input, Output = O, PartialState = P>>`) or nightly rust via `impl Trait`. The
-//! macro thus threads the needle and makes it possible to have non-allocating, anonymous parsers
-//! on stable rust.
+//! If we need a parser that is mutually recursive or if we want to export a
+//! reusable parser the [`parser!`] macro can be used. In effect it makes it
+//! possible to return a parser without naming the type of the parser (which can
+//! be very large due to combine's trait based approach). While it is possible
+//! to do avoid naming the type without the macro those solutions require either
+//! allocation (`Box<dyn Parser< Input, Output = O, PartialState = P>>`) or
+//! nightly rust via `impl Trait`. The macro thus threads the needle and makes
+//! it possible to have non-allocating, anonymous parsers on stable rust.
 //!
 //! ```
 //! #[macro_use]
@@ -200,17 +208,17 @@ extern crate alloc;
 
 #[doc(inline)]
 pub use crate::error::{ParseError, ParseResult, StdParseResult};
-
+#[doc(inline)]
+pub use crate::parser::choice::choice;
+#[doc(inline)]
+pub use crate::parser::combinator::from_str;
+#[doc(inline)]
+pub use crate::parser::token::tokens_cmp;
 #[cfg(feature = "std")]
 #[doc(inline)]
 pub use crate::parser::EasyParser;
-
 #[doc(inline)]
 pub use crate::parser::Parser;
-
-#[doc(inline)]
-pub use crate::stream::{Positioned, RangeStream, RangeStreamOnce, Stream, StreamOnce};
-
 #[doc(inline)]
 pub use crate::parser::{
     choice::optional,
@@ -226,23 +234,16 @@ pub use crate::parser::{
         any, eof, none_of, one_of, position, produce, satisfy, satisfy_map, token, tokens, value,
     },
 };
-
 #[doc(inline)]
-pub use crate::parser::choice::choice;
-
-#[doc(inline)]
-pub use crate::parser::combinator::from_str;
-
-#[doc(inline)]
-pub use crate::parser::token::tokens_cmp;
+pub use crate::stream::{Positioned, RangeStream, RangeStreamOnce, Stream, StreamOnce};
 
 /// Declares a named parser which can easily be reused.
 ///
-/// The expression which creates the parser should have no side effects as it may be called
-/// multiple times even during a single parse attempt.
+/// The expression which creates the parser should have no side effects as it
+/// may be called multiple times even during a single parse attempt.
 ///
-/// NOTE: If you are using rust nightly you can use `impl Trait` instead. See the [json parser][] for
-/// an example.
+/// NOTE: If you are using rust nightly you can use `impl Trait` instead. See
+/// the [json parser][] for an example.
 ///
 /// [json parser]:https://github.com/Marwes/combine/blob/master/benches/json.rs
 ///
@@ -590,7 +591,6 @@ macro_rules! forward_parser {
 pub mod lib {
     #[cfg(not(feature = "std"))]
     pub use core::*;
-
     #[cfg(feature = "std")]
     pub use std::*;
 }
@@ -599,7 +599,8 @@ pub mod lib {
 #[doc(inline)]
 pub use crate::stream::easy;
 
-/// Error types and traits which define what kind of errors combine parsers may emit
+/// Error types and traits which define what kind of errors combine parsers may
+/// emit
 #[macro_use]
 pub mod error;
 #[macro_use]
@@ -617,9 +618,8 @@ pub struct ErrorOffset(u8);
 #[cfg(test)]
 mod tests {
 
-    use crate::parser::char::{char, string};
-
     use super::*;
+    use crate::parser::char::{char, string};
 
     #[test]
     fn chainl1_error_consume() {
@@ -653,6 +653,7 @@ mod tests {
 #[cfg(all(feature = "std", test))]
 mod std_tests {
 
+    use super::{easy::Error, error::Commit, stream::IteratorStream, *};
     use crate::{
         error::StdParseResult,
         parser::char::{alpha_num, char, digit, letter, spaces, string},
@@ -661,8 +662,6 @@ mod std_tests {
             position::{self, SourcePosition},
         },
     };
-
-    use super::{easy::Error, error::Commit, stream::IteratorStream, *};
 
     #[test]
     fn optional_error_consume() {
@@ -895,9 +894,7 @@ mod std_tests {
 
     #[test]
     fn std_error() {
-        use std::error::Error as StdError;
-
-        use std::fmt;
+        use std::{error::Error as StdError, fmt};
 
         #[derive(Debug)]
         struct Error;
@@ -923,16 +920,14 @@ mod std_tests {
 
     #[test]
     fn extract_std_error() {
-        // The previous test verified that we could map a ParseError to a StdError by dropping
-        // the internal error details.
+        // The previous test verified that we could map a ParseError to a StdError by
+        // dropping the internal error details.
         // This test verifies that we can map a ParseError to a StdError
-        // without dropping the internal error details.  Consumers using `error-chain` will
-        // appreciate this.  For technical reasons this is pretty janky; see the discussion in
-        // https://github.com/Marwes/combine/issues/86, and excuse the test with significant
+        // without dropping the internal error details.  Consumers using `error-chain`
+        // will appreciate this.  For technical reasons this is pretty janky;
+        // see the discussion in https://github.com/Marwes/combine/issues/86, and excuse the test with significant
         // boilerplate!
-        use std::error::Error as StdError;
-
-        use std::fmt;
+        use std::{error::Error as StdError, fmt};
 
         #[derive(Clone, PartialEq, Debug)]
         struct CloneOnly(String);
@@ -985,8 +980,9 @@ mod std_tests {
             });
 
         assert!(result.is_err());
-        // Test that the fresh ExtractedError is Display, so that the internal errors can be
-        // inspected by consuming code; and that the ExtractedError can be coerced to StdError.
+        // Test that the fresh ExtractedError is Display, so that the internal errors
+        // can be inspected by consuming code; and that the ExtractedError can
+        // be coerced to StdError.
         let _ = result.map_err(|err| {
             let s = format!("{}", err);
             assert!(s.starts_with("Parse error at 0"));

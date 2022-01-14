@@ -1,7 +1,6 @@
-use crate::lib::marker::PhantomData;
-
 use crate::{
     error::{ParseErrorInto, ParseResult, StreamErrorInto},
+    lib::marker::PhantomData,
     stream::{ResetStream, StreamErrorFor},
     Positioned, RangeStream, RangeStreamOnce, StreamOnce,
 };
@@ -78,10 +77,10 @@ where
     <S::Error as crate::error::ParseError<S::Token, S::Range, S::Position>>::StreamError:
         StreamErrorInto<S::Token, S::Range>,
 {
-    type Token = S::Token;
-    type Range = S::Range;
-    type Position = Span<S::Position>;
     type Error = E;
+    type Position = Span<S::Position>;
+    type Range = S::Range;
+    type Token = S::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<Self::Token, StreamErrorFor<Self>> {

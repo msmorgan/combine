@@ -1,3 +1,13 @@
-edition = "2018"
+condense_wildcard_suffixes = true
+edition = "2021"
+format_macro_matchers = true
+format_strings = true
 group_imports = "StdExternalCrate"
 imports_granularity = "Crate"
+normalize_comments = true
+overflow_delimited_expr = true
+reorder_impl_items = true
+use_field_init_shorthand = true
+use_try_shorthand = true
+version = "Two"
+wrap_comments = true

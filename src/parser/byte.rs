@@ -428,9 +428,8 @@ fn memslice(needle: &[u8], haystack: &[u8]) -> Option<usize> {
 /// Parsers for decoding numbers in big-endian or little-endian order.
 pub mod num {
 
-    use crate::{error::ResultExt, lib::mem::size_of, parser::function::parser, stream::uncons};
-
     use super::*;
+    use crate::{error::ResultExt, lib::mem::size_of, parser::function::parser, stream::uncons};
 
     macro_rules! integer_parser {
         (
@@ -587,9 +586,8 @@ pub mod num {
     #[cfg(all(feature = "std", test))]
     mod tests {
 
-        use crate::stream::{buffered, position, IteratorStream};
-
         use super::*;
+        use crate::stream::{buffered, position, IteratorStream};
 
         #[test]
         fn no_rangestream() {
@@ -629,9 +627,8 @@ pub mod num {
 #[cfg(all(feature = "std", test))]
 mod tests {
 
-    use crate::stream::{buffered, position, read};
-
     use super::*;
+    use crate::stream::{buffered, position, read};
 
     #[test]
     fn memslice_basic() {
@@ -651,11 +648,13 @@ mod tests {
 
     #[test]
     fn bytes_read_stream() {
-        assert!(bytes(b"abc")
-            .parse(buffered::Stream::new(
-                position::Stream::new(read::Stream::new("abc".as_bytes())),
-                1
-            ))
-            .is_ok());
+        assert!(
+            bytes(b"abc")
+                .parse(buffered::Stream::new(
+                    position::Stream::new(read::Stream::new("abc".as_bytes())),
+                    1
+                ))
+                .is_ok()
+        );
     }
 }

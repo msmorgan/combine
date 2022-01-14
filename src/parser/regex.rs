@@ -1,9 +1,11 @@
-//! Module containing regex parsers on streams returning ranges of `&str` or `&[u8]`.
+//! Module containing regex parsers on streams returning ranges of `&str` or
+//! `&[u8]`.
 //!
-//! All regex parsers are overloaded on `&str` and `&[u8]` ranges and can take a `Regex` by value
-//! or shared reference (`&`).
+//! All regex parsers are overloaded on `&str` and `&[u8]` ranges and can take a
+//! `Regex` by value or shared reference (`&`).
 //!
-//! Enabled using the `regex` feature (for `regex-0.2`) or the `regex-1` feature for `regex-1.0`.
+//! Enabled using the `regex` feature (for `regex-0.2`) or the `regex-1` feature
+//! for `regex-1.0`.
 //!
 //! ```
 //! use once_cell::sync::Lazy;
@@ -80,12 +82,14 @@ where
     fn is_match(&self, range: Range) -> bool {
         (**self).is_match(range)
     }
+
     fn find_iter<F>(&self, range: Range) -> (usize, F)
     where
         F: FromIterator<Range>,
     {
         (**self).find_iter(range)
     }
+
     fn captures<F, G>(&self, range: Range) -> (usize, G)
     where
         F: FromIterator<Range>,
@@ -93,6 +97,7 @@ where
     {
         (**self).captures(range)
     }
+
     fn as_str(&self) -> &str {
         (**self).as_str()
     }
@@ -121,15 +126,16 @@ mod regex {
 
     use std::iter::FromIterator;
 
-    use super::{find_iter, MatchFind, Regex};
-
     pub use self::regex::*;
+    use super::{find_iter, MatchFind, Regex};
 
     impl<'t> MatchFind for regex::Match<'t> {
         type Range = &'t str;
+
         fn end(&self) -> usize {
             regex::Match::end(self)
         }
+
         fn as_match(&self) -> Self::Range {
             self.as_str()
         }
@@ -137,9 +143,11 @@ mod regex {
 
     impl<'t> MatchFind for regex::bytes::Match<'t> {
         type Range = &'t [u8];
+
         fn end(&self) -> usize {
             regex::bytes::Match::end(self)
         }
+
         fn as_match(&self) -> Self::Range {
             self.as_bytes()
         }
@@ -149,12 +157,14 @@ mod regex {
         fn is_match(&self, range: &'a str) -> bool {
             regex::Regex::is_match(self, range)
         }
+
         fn find_iter<F>(&self, range: &'a str) -> (usize, F)
         where
             F: FromIterator<&'a str>,
         {
             find_iter(regex::Regex::find_iter(self, range))
         }
+
         fn captures<F, G>(&self, range: &'a str) -> (usize, G)
         where
             F: FromIterator<&'a str>,
@@ -176,6 +186,7 @@ mod regex {
                 .collect();
             (end, value)
         }
+
         fn as_str(&self) -> &str {
             regex::Regex::as_str(self)
         }
@@ -185,12 +196,14 @@ mod regex {
         fn is_match(&self, range: &'a [u8]) -> bool {
             regex::bytes::Regex::is_match(self, range)
         }
+
         fn find_iter<F>(&self, range: &'a [u8]) -> (usize, F)
         where
             F: FromIterator<&'a [u8]>,
         {
             find_iter(regex::bytes::Regex::find_iter(self, range))
         }
+
         fn captures<F, G>(&self, range: &'a [u8]) -> (usize, G)
         where
             F: FromIterator<&'a [u8]>,
@@ -212,6 +225,7 @@ mod regex {
                 .collect();
             (end, value)
         }
+
         fn as_str(&self) -> &str {
             regex::bytes::Regex::as_str(self)
         }
@@ -239,6 +253,7 @@ where
             PeekErr(Input::Error::empty(input.position()).into())
         }
     }
+
     fn add_error(&mut self, error: &mut Tracked<<Input as StreamOnce>::Error>) {
         error.error.add(StreamError::expected_format(format_args!(
             "/{}/",
@@ -296,6 +311,7 @@ where
             None => PeekErr(Input::Error::empty(input.position()).into()),
         }
     }
+
     fn add_error(&mut self, error: &mut Tracked<<Input as StreamOnce>::Error>) {
         error.error.add(StreamError::expected_format(format_args!(
             "/{}/",
@@ -304,8 +320,8 @@ where
     }
 }
 
-/// Matches `regex` on the input by running `find` on the input and returns the first match.
-/// Consumes all input up until the end of the first match.
+/// Matches `regex` on the input by running `find` on the input and returns the
+/// first match. Consumes all input up until the end of the first match.
 ///
 /// ```
 /// extern crate regex;
@@ -355,6 +371,7 @@ where
         let (end, value) = self.0.find_iter(input.range());
         take(end).parse_lazy(input).map(|_| value)
     }
+
     fn add_error(&mut self, error: &mut Tracked<<Input as StreamOnce>::Error>) {
         error.error.add(StreamError::expected_format(format_args!(
             "/{}/",
@@ -416,6 +433,7 @@ where
             None => PeekErr(Input::Error::empty(input.position()).into()),
         }
     }
+
     fn add_error(&mut self, error: &mut Tracked<<Input as StreamOnce>::Error>) {
         error.error.add(StreamError::expected_format(format_args!(
             "/{}/",
@@ -425,7 +443,8 @@ where
 }
 
 /// Matches `regex` on the input by running `captures_iter` on the input.
-/// Returns the captures of the first match and consumes the input up until the end of that match.
+/// Returns the captures of the first match and consumes the input up until the
+/// end of that match.
 ///
 /// ```
 /// extern crate regex;
@@ -482,6 +501,7 @@ where
         let (end, value) = self.0.captures(input.range());
         take(end).parse_lazy(input).map(|_| value)
     }
+
     fn add_error(&mut self, error: &mut Tracked<<Input as StreamOnce>::Error>) {
         error.error.add(StreamError::expected_format(format_args!(
             "/{}/",
@@ -491,8 +511,9 @@ where
 }
 
 /// Matches `regex` on the input by running `captures_iter` on the input.
-/// Returns all captures which is part of the match in a `F: FromIterator<Input::Range>`.
-/// Consumes all input up until the end of the last match.
+/// Returns all captures which is part of the match in a `F:
+/// FromIterator<Input::Range>`. Consumes all input up until the end of the last
+/// match.
 ///
 /// ```
 /// extern crate regex;

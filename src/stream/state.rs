@@ -40,10 +40,10 @@ impl<S, U> StreamOnce for Stream<S, U>
 where
     S: StreamOnce,
 {
-    type Token = S::Token;
-    type Range = S::Range;
-    type Position = S::Position;
     type Error = S::Error;
+    type Position = S::Position;
+    type Range = S::Range;
+    type Token = S::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<S::Token, StreamErrorFor<Self>> {

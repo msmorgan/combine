@@ -40,10 +40,12 @@ impl<Item, Range> StreamError<Item, Range> for Error {
     fn unexpected_token(_: Item) -> Self {
         Error::Unexpected
     }
+
     #[inline]
     fn unexpected_range(_: Range) -> Self {
         Error::Unexpected
     }
+
     #[inline]
     fn unexpected_format<T>(_: T) -> Self
     where
@@ -56,10 +58,12 @@ impl<Item, Range> StreamError<Item, Range> for Error {
     fn expected_token(_: Item) -> Self {
         Error::Unexpected
     }
+
     #[inline]
     fn expected_range(_: Range) -> Self {
         Error::Unexpected
     }
+
     #[inline]
     fn expected_format<T>(_: T) -> Self
     where
@@ -67,6 +71,7 @@ impl<Item, Range> StreamError<Item, Range> for Error {
     {
         Error::Unexpected
     }
+
     #[inline]
     fn message_format<T>(_: T) -> Self
     where
@@ -74,10 +79,12 @@ impl<Item, Range> StreamError<Item, Range> for Error {
     {
         Error::Unexpected
     }
+
     #[inline]
     fn message_token(_: Item) -> Self {
         Error::Unexpected
     }
+
     #[inline]
     fn message_range(_: Range) -> Self {
         Error::Unexpected
@@ -111,6 +118,7 @@ where
     Position: Default,
 {
     type StreamError = Self;
+
     #[inline]
     fn empty(_position: Position) -> Self {
         Error::Unexpected
@@ -159,10 +167,10 @@ pub struct Stream<R> {
 }
 
 impl<R: Read> StreamOnce for Stream<R> {
-    type Token = u8;
-    type Range = &'static [u8];
-    type Position = usize;
     type Error = Error;
+    type Position = usize;
+    type Range = &'static [u8];
+    type Token = u8;
 
     #[inline]
     fn uncons(&mut self) -> Result<u8, StreamErrorFor<Self>> {
@@ -178,10 +186,12 @@ impl<R> Stream<R>
 where
     R: Read,
 {
-    /// Creates a `StreamOnce` instance from a value implementing `std::io::Read`.
+    /// Creates a `StreamOnce` instance from a value implementing
+    /// `std::io::Read`.
     ///
-    /// NOTE: This type do not implement `Positioned` and `Clone` and must be wrapped with types
-    ///     such as `BufferedStreamRef` and `State` to become a `Stream` which can be parsed
+    /// NOTE: This type do not implement `Positioned` and `Clone` and must be
+    /// wrapped with types     such as `BufferedStreamRef` and `State` to
+    /// become a `Stream` which can be parsed
     ///
     /// ```rust
     /// # #![cfg(feature = "std")]

@@ -155,7 +155,7 @@ where
 
         while buf.clone().uncons().is_ok() {
             match parse_http_request(buf) {
-                Ok(((_, _), b)) => {
+                Ok(((..), b)) => {
                     buf = b;
                 }
                 Err(err) => panic!("{:?}", err),

@@ -1,15 +1,14 @@
-use crate::{
-    error::ParseError,
-    stream::buf_reader::{Buffer, Bufferless, CombineBuffer},
-};
-
+#[cfg(feature = "pin-project-lite")]
+use std::pin::Pin;
 use std::{
     fmt,
     io::{self, Read},
 };
 
-#[cfg(feature = "pin-project-lite")]
-use std::pin::Pin;
+use crate::{
+    error::ParseError,
+    stream::buf_reader::{Buffer, Bufferless, CombineBuffer},
+};
 
 #[derive(Debug)]
 pub enum Error<E, P> {
@@ -62,16 +61,18 @@ where
     P: Default,
     S: Default,
 {
-    /// Constructs a new [`Decoder`] with an internal buffer. Allows any `AsyncRead/Read` instance to
-    /// be used when decoding but there may be data left in the internal buffer after decoding
-    /// (accessible with [`Decoder::buffer`])
+    /// Constructs a new [`Decoder`] with an internal buffer. Allows any
+    /// `AsyncRead/Read` instance to be used when decoding but there may be
+    /// data left in the internal buffer after decoding (accessible with
+    /// [`Decoder::buffer`])
     pub fn new() -> Self {
         Decoder::default()
     }
 
-    /// Constructs a new [`Decoder`] with an internal buffer. Allows any `AsyncRead/Read` instance to
-    /// be used when decoding but there may be data left in the internal buffer after decoding
-    /// (accessible with [`Decoder::buffer`])
+    /// Constructs a new [`Decoder`] with an internal buffer. Allows any
+    /// `AsyncRead/Read` instance to be used when decoding but there may be
+    /// data left in the internal buffer after decoding (accessible with
+    /// [`Decoder::buffer`])
     pub fn new_buffer() -> Self {
         Decoder::new()
     }
@@ -82,8 +83,8 @@ where
     P: Default,
     S: Default,
 {
-    /// Constructs a new `Decoder` without an internal buffer. Requires the read instance to be
-    /// wrapped with combine's [`BufReader`] instance to
+    /// Constructs a new `Decoder` without an internal buffer. Requires the read
+    /// instance to be wrapped with combine's [`BufReader`] instance to
     ///
     /// [`BufReader`]: super::buf_reader::BufReader
     pub fn new_bufferless() -> Self {
@@ -103,8 +104,8 @@ impl<S, P, C> Decoder<S, P, C> {
     where
         C: CombineBuffer<R>,
     {
-        // Remove the data we have parsed and adjust `removed` to be the amount of data we
-        // committed from `self.reader`
+        // Remove the data we have parsed and adjust `removed` to be the amount of data
+        // we committed from `self.reader`
         self.buffer.advance(read, removed)
     }
 
@@ -114,8 +115,8 @@ impl<S, P, C> Decoder<S, P, C> {
     where
         C: CombineBuffer<R>,
     {
-        // Remove the data we have parsed and adjust `removed` to be the amount of data we
-        // committed from `self.reader`
+        // Remove the data we have parsed and adjust `removed` to be the amount of data
+        // we committed from `self.reader`
         self.buffer.advance_pin(read, removed);
     }
 

@@ -1,30 +1,28 @@
-//
-//Traits and implementations of arbitrary data streams.
+// Traits and implementations of arbitrary data streams.
+//! Streams are similar to the `Iterator` trait in that they represent some
+//! sequential set of items which can be retrieved one by one. Where `Stream`s
+//! differ is that they are allowed to return errors instead of just `None` and
+//! if they implement the `RangeStreamOnce` trait they are also capable of
+//! returning multiple items at the same time, usually in the form of a slice.
 //!
-//! Streams are similar to the `Iterator` trait in that they represent some sequential set of items
-//! which can be retrieved one by one. Where `Stream`s differ is that they are allowed to return
-//! errors instead of just `None` and if they implement the `RangeStreamOnce` trait they are also
-//! capable of returning multiple items at the same time, usually in the form of a slice.
-//!
-//! In addition to he functionality above, a proper `Stream` usable by a `Parser` must also have a
-//! position (marked by the `Positioned` trait) and must also be resetable (marked by the
-//! `ResetStream` trait). The former is used to ensure that errors at different points in the stream
-//! aren't combined and the latter is used in parsers such as `or` to try multiple alternative
+//! In addition to he functionality above, a proper `Stream` usable by a
+//! `Parser` must also have a position (marked by the `Positioned` trait) and
+//! must also be resetable (marked by the `ResetStream` trait). The former is
+//! used to ensure that errors at different points in the stream aren't combined
+//! and the latter is used in parsers such as `or` to try multiple alternative
 //! parses.
 
-use crate::lib::{cmp::Ordering, fmt, marker::PhantomData, str::Chars};
-
+#[cfg(feature = "std")]
+pub use self::decoder::Decoder;
 use crate::{
     error::{
         ParseError,
         ParseResult::{self, *},
         StreamError, StringStreamError, Tracked, UnexpectedParse,
     },
+    lib::{cmp::Ordering, fmt, marker::PhantomData, str::Chars},
     Parser,
 };
-
-#[cfg(feature = "std")]
-pub use self::decoder::Decoder;
 
 #[doc(hidden)]
 #[macro_export]
@@ -50,8 +48,8 @@ macro_rules! clone_resetable {
 #[cfg(feature = "std")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub mod buf_reader;
-/// Stream wrapper which provides a `ResetStream` impl for `StreamOnce` impls which do not have
-/// one.
+/// Stream wrapper which provides a `ResetStream` impl for `StreamOnce` impls
+/// which do not have one.
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 pub mod buffered;
@@ -112,23 +110,26 @@ pub type StreamErrorFor<Input> = <<Input as StreamOnce>::Error as ParseError<
     <Input as StreamOnce>::Position,
 >>::StreamError;
 
-/// `StreamOnce` represents a sequence of items that can be extracted one by one.
+/// `StreamOnce` represents a sequence of items that can be extracted one by
+/// one.
 pub trait StreamOnce {
     /// The type of items which is yielded from this stream.
     type Token: Clone;
 
     /// The type of a range of items yielded from this stream.
-    /// Types which do not a have a way of yielding ranges of items should just use the
-    /// `Self::Token` for this type.
+    /// Types which do not a have a way of yielding ranges of items should just
+    /// use the `Self::Token` for this type.
     type Range: Clone;
 
     /// Type which represents the position in a stream.
-    /// `Ord` is required to allow parsers to determine which of two positions are further ahead.
+    /// `Ord` is required to allow parsers to determine which of two positions
+    /// are further ahead.
     type Position: Clone + Ord;
 
     type Error: ParseError<Self::Token, Self::Range, Self::Position>;
-    /// Takes a stream and removes its first token, yielding the token and the rest of the elements.
-    /// Returns `Err` if no element could be retrieved.
+    /// Takes a stream and removes its first token, yielding the token and the
+    /// rest of the elements. Returns `Err` if no element could be
+    /// retrieved.
     fn uncons(&mut self) -> Result<Self::Token, StreamErrorFor<Self>>;
 
     /// Returns `true` if this stream only contains partial input.
@@ -143,8 +144,8 @@ pub trait StreamOnce {
 pub trait ResetStream: StreamOnce {
     type Checkpoint: Clone;
 
-    /// Creates a `Checkpoint` at the current position which can be used to reset the stream
-    /// later to the current position
+    /// Creates a `Checkpoint` at the current position which can be used to
+    /// reset the stream later to the current position
     fn checkpoint(&self) -> Self::Checkpoint;
     /// Attempts to reset the stream to an earlier position.
     fn reset(&mut self, checkpoint: Self::Checkpoint) -> Result<(), Self::Error>;
@@ -157,9 +158,9 @@ clone_resetable! {(T: Clone) IteratorStream<T>}
 
 /// A stream of tokens which can be duplicated
 ///
-/// This is a trait over types which implement the `StreamOnce`, `ResetStream` and `Positioned`
-/// traits. If you need a custom `Stream` object then implement those traits and `Stream` is
-/// implemented automatically.
+/// This is a trait over types which implement the `StreamOnce`, `ResetStream`
+/// and `Positioned` traits. If you need a custom `Stream` object then implement
+/// those traits and `Stream` is implemented automatically.
 pub trait Stream: StreamOnce + ResetStream + Positioned {}
 
 impl<Input> Stream for Input where Input: StreamOnce + Positioned + ResetStream {}
@@ -175,7 +176,8 @@ where
     }
 }
 
-/// A `RangeStream` is an extension of `StreamOnce` which allows for zero copy parsing.
+/// A `RangeStream` is an extension of `StreamOnce` which allows for zero copy
+/// parsing.
 pub trait RangeStreamOnce: StreamOnce + ResetStream {
     /// Takes `size` elements from the stream.
     /// Fails if the length of the stream is less than `size`.
@@ -220,7 +222,8 @@ pub trait RangeStreamOnce: StreamOnce + ResetStream {
         }
     }
 
-    /// Returns the distance between `self` and `end`. The returned `usize` must be so that
+    /// Returns the distance between `self` and `end`. The returned `usize` must
+    /// be so that
     ///
     /// ```ignore
     /// let start = stream.checkpoint();
@@ -233,7 +236,8 @@ pub trait RangeStreamOnce: StreamOnce + ResetStream {
     fn range(&self) -> Self::Range;
 }
 
-/// A `RangeStream` is an extension of `Stream` which allows for zero copy parsing.
+/// A `RangeStream` is an extension of `Stream` which allows for zero copy
+/// parsing.
 pub trait RangeStream: Stream + RangeStreamOnce {}
 
 impl<Input> RangeStream for Input where Input: RangeStreamOnce + Stream {}
@@ -376,10 +380,12 @@ where
 /// Trait representing a range of elements.
 pub trait Range {
     /// Returns the remaining length of `self`.
-    /// The returned length need not be the same as the number of items left in the stream.
+    /// The returned length need not be the same as the number of items left in
+    /// the stream.
     fn len(&self) -> usize;
 
-    /// Returns `true` if the range does not contain any elements (`Range::len() == 0`)
+    /// Returns `true` if the range does not contain any elements (`Range::len()
+    /// == 0`)
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -389,13 +395,11 @@ impl<'a, I> StreamOnce for &'a mut I
 where
     I: StreamOnce + ?Sized,
 {
+    type Error = I::Error;
+    type Position = I::Position;
+    type Range = I::Range;
     type Token = I::Token;
 
-    type Range = I::Range;
-
-    type Position = I::Position;
-
-    type Error = I::Error;
     fn uncons(&mut self) -> Result<Self::Token, StreamErrorFor<Self>> {
         (**self).uncons()
     }
@@ -475,10 +479,10 @@ where
 }
 
 impl<'a> StreamOnce for &'a str {
-    type Token = char;
-    type Range = &'a str;
-    type Position = PointerOffset<str>;
     type Error = StringStreamError;
+    type Position = PointerOffset<str>;
+    type Range = &'a str;
+    type Token = char;
 
     #[inline]
     fn uncons(&mut self) -> Result<char, StreamErrorFor<Self>> {
@@ -638,7 +642,8 @@ where
         };
     }
 
-    // SAFETY: ensures we can access at least 8 elements starting at i, making get_unchecked sound.
+    // SAFETY: ensures we can access at least 8 elements starting at i, making
+    // get_unchecked sound.
     while len - i >= 8 {
         check!();
         check!();
@@ -730,10 +735,10 @@ impl<'a, T> StreamOnce for &'a [T]
 where
     T: Clone + PartialEq,
 {
-    type Token = T;
-    type Range = &'a [T];
-    type Position = PointerOffset<[T]>;
     type Error = UnexpectedParse;
+    type Position = PointerOffset<[T]>;
+    type Range = &'a [T];
+    type Token = T;
 
     #[inline]
     fn uncons(&mut self) -> Result<T, StreamErrorFor<Self>> {
@@ -747,7 +752,8 @@ where
     }
 }
 
-/// Stream type which indicates that the stream is partial if end of input is reached
+/// Stream type which indicates that the stream is partial if end of input is
+/// reached
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct PartialStream<S>(pub S);
 
@@ -788,10 +794,10 @@ impl<S> StreamOnce for PartialStream<S>
 where
     S: StreamOnce,
 {
-    type Token = S::Token;
-    type Range = S::Range;
-    type Position = S::Position;
     type Error = S::Error;
+    type Position = S::Position;
+    type Range = S::Range;
+    type Token = S::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<S::Token, StreamErrorFor<Self>> {
@@ -838,10 +844,11 @@ where
     }
 }
 
-/// Stream type which indicates that the stream is complete if end of input is reached
+/// Stream type which indicates that the stream is complete if end of input is
+/// reached
 ///
-/// For most streams this is already the default but this wrapper can be used to override a nested
-/// `PartialStream`
+/// For most streams this is already the default but this wrapper can be used to
+/// override a nested `PartialStream`
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
 #[repr(transparent)]
 pub struct CompleteStream<S>(pub S);
@@ -890,10 +897,10 @@ impl<S> StreamOnce for CompleteStream<S>
 where
     S: StreamOnce,
 {
-    type Token = S::Token;
-    type Range = S::Range;
-    type Position = S::Position;
     type Error = S::Error;
+    type Position = S::Position;
+    type Range = S::Range;
+    type Token = S::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<S::Token, StreamErrorFor<Self>> {
@@ -974,10 +981,10 @@ impl<S> StreamOnce for MaybePartialStream<S>
 where
     S: StreamOnce,
 {
-    type Token = S::Token;
-    type Range = S::Range;
-    type Position = S::Position;
     type Error = S::Error;
+    type Position = S::Position;
+    type Range = S::Range;
+    type Token = S::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<S::Token, StreamErrorFor<Self>> {
@@ -1024,7 +1031,8 @@ where
     }
 }
 
-/// Newtype for constructing a stream from a slice where the items in the slice are not copyable.
+/// Newtype for constructing a stream from a slice where the items in the slice
+/// are not copyable.
 #[derive(Copy, Eq, PartialEq, Ord, PartialOrd, Debug)]
 pub struct SliceStream<'a, T>(pub &'a [T]);
 
@@ -1048,10 +1056,10 @@ impl<'a, T> StreamOnce for SliceStream<'a, T>
 where
     T: PartialEq + 'a,
 {
-    type Token = &'a T;
-    type Range = &'a [T];
-    type Position = PointerOffset<[T]>;
     type Error = UnexpectedParse;
+    type Position = PointerOffset<[T]>;
+    type Range = &'a [T];
+    type Token = &'a T;
 
     #[inline]
     fn uncons(&mut self) -> Result<&'a T, StreamErrorFor<Self>> {
@@ -1085,7 +1093,8 @@ where
         };
     }
 
-    // SAFETY: ensures we can access at least 8 elements starting at i, making get_unchecked sound.
+    // SAFETY: ensures we can access at least 8 elements starting at i, making
+    // get_unchecked sound.
     while len - i >= 8 {
         check!();
         check!();
@@ -1172,8 +1181,9 @@ where
 {
     /// Converts an `Iterator` into a stream.
     ///
-    /// NOTE: This type do not implement `Positioned` and `Clone` and must be wrapped with types
-    ///     such as `BufferedStreamRef` and `State` to become a `Stream` which can be parsed
+    /// NOTE: This type do not implement `Positioned` and `Clone` and must be
+    /// wrapped with types     such as `BufferedStreamRef` and `State` to
+    /// become a `Stream` which can be parsed
     pub fn new<T>(iter: T) -> IteratorStream<Input>
     where
         T: IntoIterator<IntoIter = Input, Item = Input::Item>,
@@ -1187,6 +1197,7 @@ where
     Input: Iterator,
 {
     type Item = Input::Item;
+
     fn next(&mut self) -> Option<Input::Item> {
         self.0.next()
     }
@@ -1196,10 +1207,10 @@ impl<Input: Iterator> StreamOnce for IteratorStream<Input>
 where
     Input::Item: Clone + PartialEq,
 {
-    type Token = Input::Item;
-    type Range = Input::Item;
-    type Position = ();
     type Error = UnexpectedParse;
+    type Position = ();
+    type Range = Input::Item;
+    type Token = Input::Item;
 
     #[inline]
     fn uncons(&mut self) -> Result<Self::Token, StreamErrorFor<Self>> {
@@ -1293,10 +1304,10 @@ where
 
 /// Decodes `input` using `parser`.
 ///
-/// Return `Ok(Some(token), committed_data)` if there was enough data to finish parsing using
-/// `parser`.
-/// Returns `Ok(None, committed_data)` if `input` did not contain enough data to finish parsing
-/// using `parser`.
+/// Return `Ok(Some(token), committed_data)` if there was enough data to finish
+/// parsing using `parser`.
+/// Returns `Ok(None, committed_data)` if `input` did not contain enough data to
+/// finish parsing using `parser`.
 ///
 /// See `examples/async.rs` for example usage in a `tokio_io::codec::Decoder`
 pub fn decode<Input, P>(
@@ -1330,12 +1341,12 @@ where
 /// Decodes `input` using `parser`. Like `decode` but works directly in both
 /// `tokio_util::Decoder::decode` and `tokio_util::Decoder::decode_eof`
 ///
-/// Return `Ok(Some(token), committed_data)` if there was enough data to finish parsing using
-/// `parser`.
-/// Returns `Ok(None, committed_data)` if `input` did not contain enough data to finish parsing
-/// using `parser`.
-/// Returns `Ok(None, 0)` if `input` did not contain enough data to finish parsing
-/// using `parser`.
+/// Return `Ok(Some(token), committed_data)` if there was enough data to finish
+/// parsing using `parser`.
+/// Returns `Ok(None, committed_data)` if `input` did not contain enough data to
+/// finish parsing using `parser`.
+/// Returns `Ok(None, 0)` if `input` did not contain enough data to finish
+/// parsing using `parser`.
 ///
 /// See `examples/async.rs` for example usage in a `tokio_io::codec::Decoder`
 pub fn decode_tokio<Input, P>(
@@ -1370,12 +1381,12 @@ where
     }
 }
 
-/// Parses an instance of `std::io::Read` as a `&[u8]` without reading the entire file into
-/// memory.
+/// Parses an instance of `std::io::Read` as a `&[u8]` without reading the
+/// entire file into memory.
 ///
-/// This is defined as a macro to work around the lack of Higher Ranked Types. See the
-/// example for how to pass a parser to the macro (constructing parts of the parser outside of
-/// the `decode!` call is unlikely to work.
+/// This is defined as a macro to work around the lack of Higher Ranked Types.
+/// See the example for how to pass a parser to the macro (constructing parts of
+/// the parser outside of the `decode!` call is unlikely to work.
 ///
 /// ```
 /// use std::{
@@ -1403,15 +1414,15 @@ where
 #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 #[macro_export]
 macro_rules! decode {
-    ($decoder: expr, $read: expr, $parser: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr $(,)?) => {
         $crate::decode!($decoder, $read, $parser, |input, _position| input, |x| x)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr $(,)?) => {
         $crate::decode!($decoder, $read, $parser, $input_stream, |x| x)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr, $post_decode: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr, $post_decode:expr $(,)?) => {
         match $decoder {
             ref mut decoder => match $read {
                 ref mut read => 'outer: loop {
@@ -1431,7 +1442,7 @@ macro_rules! decode {
                         match result {
                             Ok(x) => x,
                             Err(err) => {
-                                break 'outer Err($crate::stream::decoder::Error::Parse(err))
+                                break 'outer Err($crate::stream::decoder::Error::Parse(err));
                             }
                         }
                     };
@@ -1448,7 +1459,7 @@ macro_rules! decode {
                             break 'outer Err($crate::stream::decoder::Error::Io {
                                 error,
                                 position: Clone::clone(decoder.position()),
-                            })
+                            });
                         }
                     };
                 },
@@ -1457,12 +1468,12 @@ macro_rules! decode {
     };
 }
 
-/// Parses an instance of `futures::io::AsyncRead` as a `&[u8]` without reading the entire file into
-/// memory.
+/// Parses an instance of `futures::io::AsyncRead` as a `&[u8]` without reading
+/// the entire file into memory.
 ///
-/// This is defined as a macro to work around the lack of Higher Ranked Types. See the
-/// example for how to pass a parser to the macro (constructing parts of the parser outside of
-/// the `decode!` call is unlikely to work.
+/// This is defined as a macro to work around the lack of Higher Ranked Types.
+/// See the example for how to pass a parser to the macro (constructing parts of
+/// the parser outside of the `decode!` call is unlikely to work.
 ///
 /// ```
 /// # use futures_03_dep as futures;
@@ -1554,12 +1565,12 @@ macro_rules! decode_futures_03 {
     };
 }
 
-/// Parses an instance of `tokio::io::AsyncRead` as a `&[u8]` without reading the entire file into
-/// memory.
+/// Parses an instance of `tokio::io::AsyncRead` as a `&[u8]` without reading
+/// the entire file into memory.
 ///
-/// This is defined as a macro to work around the lack of Higher Ranked Types. See the
-/// example for how to pass a parser to the macro (constructing parts of the parser outside of
-/// the `decode!` call is unlikely to work.
+/// This is defined as a macro to work around the lack of Higher Ranked Types.
+/// See the example for how to pass a parser to the macro (constructing parts of
+/// the parser outside of the `decode!` call is unlikely to work.
 ///
 /// ```
 /// # use tokio_02_dep as tokio;
@@ -1594,15 +1605,15 @@ macro_rules! decode_futures_03 {
 #[cfg_attr(docsrs, doc(cfg(feature = "tokio-02")))]
 #[macro_export]
 macro_rules! decode_tokio_02 {
-    ($decoder: expr, $read: expr, $parser: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr $(,)?) => {
         $crate::decode_tokio_02!($decoder, $read, $parser, |input, _position| input)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr $(,)?) => {
         $crate::decode_tokio_02!($decoder, $read, $parser, $input_stream, |x| x)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr, $post_decode: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr, $post_decode:expr $(,)?) => {
         match $decoder {
             ref mut decoder => match $read {
                 ref mut read => 'outer: loop {
@@ -1621,7 +1632,7 @@ macro_rules! decode_tokio_02 {
                         match result {
                             Ok(x) => x,
                             Err(err) => {
-                                break 'outer Err($crate::stream::decoder::Error::Parse(err))
+                                break 'outer Err($crate::stream::decoder::Error::Parse(err));
                             }
                         }
                     };
@@ -1641,7 +1652,7 @@ macro_rules! decode_tokio_02 {
                             break 'outer Err($crate::stream::decoder::Error::Io {
                                 error,
                                 position: Clone::clone(decoder.position()),
-                            })
+                            });
                         }
                     };
                 },
@@ -1650,12 +1661,12 @@ macro_rules! decode_tokio_02 {
     };
 }
 
-/// Parses an instance of `tokio::io::AsyncRead` as a `&[u8]` without reading the entire file into
-/// memory.
+/// Parses an instance of `tokio::io::AsyncRead` as a `&[u8]` without reading
+/// the entire file into memory.
 ///
-/// This is defined as a macro to work around the lack of Higher Ranked Types. See the
-/// example for how to pass a parser to the macro (constructing parts of the parser outside of
-/// the `decode!` call is unlikely to work.
+/// This is defined as a macro to work around the lack of Higher Ranked Types.
+/// See the example for how to pass a parser to the macro (constructing parts of
+/// the parser outside of the `decode!` call is unlikely to work.
 ///
 /// ```
 /// # use tokio_03_dep as tokio;
@@ -1690,15 +1701,15 @@ macro_rules! decode_tokio_02 {
 #[cfg_attr(docsrs, doc(cfg(feature = "tokio-03")))]
 #[macro_export]
 macro_rules! decode_tokio_03 {
-    ($decoder: expr, $read: expr, $parser: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr $(,)?) => {
         $crate::decode_tokio_03!($decoder, $read, $parser, |input, _position| input)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr $(,)?) => {
         $crate::decode_tokio_03!($decoder, $read, $parser, $input_stream, |x| x)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr, $post_decode: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr, $post_decode:expr $(,)?) => {
         match $decoder {
             ref mut decoder => match $read {
                 ref mut read => 'outer: loop {
@@ -1717,7 +1728,7 @@ macro_rules! decode_tokio_03 {
                         match result {
                             Ok(x) => x,
                             Err(err) => {
-                                break 'outer Err($crate::stream::decoder::Error::Parse(err))
+                                break 'outer Err($crate::stream::decoder::Error::Parse(err));
                             }
                         }
                     };
@@ -1737,7 +1748,7 @@ macro_rules! decode_tokio_03 {
                             break 'outer Err($crate::stream::decoder::Error::Io {
                                 error,
                                 position: Clone::clone(decoder.position()),
-                            })
+                            });
                         }
                     };
                 },
@@ -1746,12 +1757,12 @@ macro_rules! decode_tokio_03 {
     };
 }
 
-/// Parses an instance of `tokio::io::AsyncRead` as a `&[u8]` without reading the entire file into
-/// memory.
+/// Parses an instance of `tokio::io::AsyncRead` as a `&[u8]` without reading
+/// the entire file into memory.
 ///
-/// This is defined as a macro to work around the lack of Higher Ranked Types. See the
-/// example for how to pass a parser to the macro (constructing parts of the parser outside of
-/// the `decode!` call is unlikely to work.
+/// This is defined as a macro to work around the lack of Higher Ranked Types.
+/// See the example for how to pass a parser to the macro (constructing parts of
+/// the parser outside of the `decode!` call is unlikely to work.
 ///
 /// ```
 /// # use tokio_dep as tokio;
@@ -1786,15 +1797,15 @@ macro_rules! decode_tokio_03 {
 #[cfg_attr(docsrs, doc(cfg(feature = "tokio")))]
 #[macro_export]
 macro_rules! decode_tokio {
-    ($decoder: expr, $read: expr, $parser: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr $(,)?) => {
         $crate::decode_tokio!($decoder, $read, $parser, |input, _position| input)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr $(,)?) => {
         $crate::decode_tokio!($decoder, $read, $parser, $input_stream, |x| x)
     };
 
-    ($decoder: expr, $read: expr, $parser: expr, $input_stream: expr, $post_decode: expr $(,)?) => {
+    ($decoder:expr, $read:expr, $parser:expr, $input_stream:expr, $post_decode:expr $(,)?) => {
         match $decoder {
             ref mut decoder => match $read {
                 ref mut read => 'outer: loop {
@@ -1813,7 +1824,7 @@ macro_rules! decode_tokio {
                         match result {
                             Ok(x) => x,
                             Err(err) => {
-                                break 'outer Err($crate::stream::decoder::Error::Parse(err))
+                                break 'outer Err($crate::stream::decoder::Error::Parse(err));
                             }
                         }
                     };
@@ -1833,7 +1844,7 @@ macro_rules! decode_tokio {
                             break 'outer Err($crate::stream::decoder::Error::Io {
                                 error,
                                 position: Clone::clone(decoder.position()),
-                            })
+                            });
                         }
                     };
                 },

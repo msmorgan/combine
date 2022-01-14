@@ -1,10 +1,15 @@
 //! Module containing zero-copy parsers.
 //!
-//! These parsers require the [`RangeStream`][] bound instead of a plain [`Stream`][].
+//! These parsers require the [`RangeStream`][] bound instead of a plain
+//! [`Stream`][].
 //!
 //! [`RangeStream`]: ../../stream/trait.RangeStream.html
 //! [`Stream`]: ../../stream/trait.Stream.html
 
+#[cfg(feature = "std")]
+use crate::lib::error::Error as StdError;
+#[cfg(not(feature = "std"))]
+use crate::lib::fmt;
 use crate::{
     error::{
         self, ParseError,
@@ -13,20 +18,12 @@ use crate::{
     },
     lib::{convert::TryFrom, marker::PhantomData},
     parser::ParseMode,
+    stream::{
+        uncons_range, uncons_while, uncons_while1, wrap_stream_error, Range as StreamRange,
+        RangeStream, StreamErrorFor, StreamOnce,
+    },
+    Parser,
 };
-
-#[cfg(feature = "std")]
-use crate::lib::error::Error as StdError;
-
-#[cfg(not(feature = "std"))]
-use crate::lib::fmt;
-
-use crate::stream::{
-    uncons_range, uncons_while, uncons_while1, wrap_stream_error, Range as StreamRange,
-    RangeStream, StreamErrorFor, StreamOnce,
-};
-
-use crate::Parser;
 
 pub struct Range<Input>(Input::Range)
 where
@@ -59,6 +56,7 @@ where
             Err(err) => wrap_stream_error(input, err),
         }
     }
+
     fn add_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         // TODO Add unexpected message?
         errors.error.add_expected(error::Range(self.0.clone()));
@@ -160,6 +158,7 @@ where
     type PartialState = (usize, P::PartialState);
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode<M>(
         &mut self,
@@ -194,12 +193,14 @@ where
             (range, value)
         })
     }
+
     fn add_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         self.0.add_error(errors)
     }
 }
 
-/// Zero-copy parser which returns a pair: (committed input range, parsed value).
+/// Zero-copy parser which returns a pair: (committed input range, parsed
+/// value).
 ///
 ///
 /// [`combinator::recognize_with_value`] is a non-`RangeStream` alternative.
@@ -231,8 +232,8 @@ where
     RecognizeWithValue(parser)
 }
 
-/// Zero-copy parser which reads a range of length `i.len()` and succeeds if `i` is equal to that
-/// range.
+/// Zero-copy parser which reads a range of length `i.len()` and succeeds if `i`
+/// is equal to that range.
 ///
 /// [`tokens`] is a non-`RangeStream` alternative.
 ///
@@ -312,6 +313,7 @@ where
     type PartialState = usize;
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -370,6 +372,7 @@ where
     type PartialState = usize;
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -475,12 +478,13 @@ where
                     }
                 }
                 Err(first_error) => {
-                    // If we are unable to find a successful parse even after advancing with `uncons`
-                    // below we must reset the stream to its state before the first error.
-                    // If we don't we may try and match the range `::` against `:<EOF>` which would
-                    // fail as only one `:` is present at this parse attempt. But when we later resume
-                    // with more input we must start parsing again at the first time we errored so we
-                    // can see the entire `::`
+                    // If we are unable to find a successful parse even after advancing with
+                    // `uncons` below we must reset the stream to its state
+                    // before the first error. If we don't we may try and match
+                    // the range `::` against `:<EOF>` which would fail as only
+                    // one `:` is present at this parse attempt. But when we later resume
+                    // with more input we must start parsing again at the first time we errored so
+                    // we can see the entire `::`
                     if first_stream_error.is_none() {
                         first_stream_error = Some((first_error, input.distance(&before)));
                     }
@@ -565,6 +569,7 @@ where
     type PartialState = usize;
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode<M>(
         &mut self,
@@ -611,12 +616,13 @@ where
     }
 }
 
-/// Searches the entire range using `searcher` and then consumes a range of `Some(n)`.
-/// If `f` can not find anything in the range it must return `None/NotFound` which indicates an end of input error.
+/// Searches the entire range using `searcher` and then consumes a range of
+/// `Some(n)`. If `f` can not find anything in the range it must return
+/// `None/NotFound` which indicates an end of input error.
 ///
-/// If partial parsing is used the `TakeRange` enum can be returned instead of `Option`. By
-/// returning `TakeRange::NotFound(n)` it indicates that the input can skip ahead until `n`
-/// when parsing is next resumed.
+/// If partial parsing is used the `TakeRange` enum can be returned instead of
+/// `Option`. By returning `TakeRange::NotFound(n)` it indicates that the input
+/// can skip ahead until `n` when parsing is next resumed.
 ///
 /// See [`take_until_bytes`](../byte/fn.take_until_bytes.html) for a usecase.
 pub fn take_fn<F, R, Input>(searcher: F) -> TakeFn<F, Input>
@@ -705,9 +711,8 @@ where [
 #[cfg(test)]
 mod tests {
 
-    use crate::Parser;
-
     use super::*;
+    use crate::Parser;
 
     #[test]
     fn take_while_test() {

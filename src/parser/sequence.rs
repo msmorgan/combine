@@ -503,6 +503,10 @@ where
     type Output = P2::Output;
     type PartialState = <(Ignore<P1>, P2) as Parser<Input>>::PartialState;
 
+    parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_lazy(
         &mut self,
@@ -511,7 +515,6 @@ where
         self.0.parse_lazy(input).map(|(_, b)| b)
     }
 
-    parse_mode!(Input);
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -524,8 +527,6 @@ where
     {
         self.0.parse_mode(mode, input, state).map(|(_, b)| b)
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 /// Equivalent to [`p1.with(p2)`].
@@ -552,6 +553,9 @@ where
     type PartialState = <(P1, Ignore<P2>) as Parser<Input>>::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -564,8 +568,6 @@ where
     {
         self.0.parse_mode(mode, input, state).map(|(a, _)| a)
     }
-
-    forward_parser!(Input, add_error add_committed_expected_error parser_count, 0);
 }
 
 pub fn skip<Input, P1, P2>(p1: P1, p2: P2) -> Skip<P1, P2>
@@ -623,6 +625,7 @@ where
     type PartialState = (P::PartialState, Option<(bool, N)>, N::PartialState);
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -659,11 +662,7 @@ where
             PeekOk(x) => {
                 let (committed, _) = *n_parser_cache.as_ref().unwrap();
                 *n_parser_cache = None;
-                if committed {
-                    CommitOk(x)
-                } else {
-                    PeekOk(x)
-                }
+                if committed { CommitOk(x) } else { PeekOk(x) }
             }
             CommitOk(x) => {
                 *n_parser_cache = None;
@@ -713,6 +712,7 @@ where
     type PartialState = (P::PartialState, Option<(bool, P::Output)>, N::PartialState);
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -746,11 +746,7 @@ where
         match result {
             PeekOk(x) => {
                 let (committed, _) = n_parser_cache.take().unwrap();
-                if committed {
-                    CommitOk(x)
-                } else {
-                    PeekOk(x)
-                }
+                if committed { CommitOk(x) } else { PeekOk(x) }
             }
             CommitOk(x) => {
                 *n_parser_cache = None;
@@ -814,6 +810,7 @@ where
     );
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -863,7 +860,7 @@ where
                 CommitOk((in_value, x))
             }
             PeekErr(x) => {
-                let (committed, _, _) = n_parser_cache.take().unwrap();
+                let (committed, ..) = n_parser_cache.take().unwrap();
                 *n_parser_cache = None;
                 if committed {
                     CommitErr(x.error)

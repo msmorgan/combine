@@ -2,7 +2,6 @@
 
 #[cfg(not(feature = "std"))]
 use core::str;
-
 #[cfg(feature = "std")]
 use std::str;
 

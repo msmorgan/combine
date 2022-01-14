@@ -1,10 +1,12 @@
 //! Stream wrapper which provides an informative and easy to use error type.
 //!
-//! Unless you have specific constraints preventing you from using this error type (such as being
-//! a `no_std` environment) you probably want to use this stream type. It can easily be used
-//! through the [`EasyParser::easy_parse`] method.
+//! Unless you have specific constraints preventing you from using this error
+//! type (such as being a `no_std` environment) you probably want to use this
+//! stream type. It can easily be used through the [`EasyParser::easy_parse`]
+//! method.
 //!
-//! The provided `Errors` type is roughly the same as `ParseError` in combine 1.x and 2.x.
+//! The provided `Errors` type is roughly the same as `ParseError` in combine
+//! 1.x and 2.x.
 //!
 //! ```
 //! #[macro_use]
@@ -76,24 +78,22 @@
 //!         expected_error
 //!     );
 //! }
-//!
 //! ```
 //!
 //! [`EasyParser::easy_parse`]: super::super::parser::EasyParser::easy_parse
 use std::{error::Error as StdError, fmt};
 
-use crate::error::{Info as PrimitiveInfo, ParseResult, StreamError, Tracked};
-
-use crate::stream::{
-    Positioned, RangeStream, RangeStreamOnce, ResetStream, StreamErrorFor, StreamOnce,
+use crate::{
+    error::{Info as PrimitiveInfo, ParseResult, StreamError, Tracked},
+    stream::{Positioned, RangeStream, RangeStreamOnce, ResetStream, StreamErrorFor, StreamOnce},
 };
 
-/// Enum holding error information. Variants are defined for `Stream::Token` and `Stream::Range` as
-/// well as string variants holding easy descriptions.
+/// Enum holding error information. Variants are defined for `Stream::Token` and
+/// `Stream::Range` as well as string variants holding easy descriptions.
 ///
 /// As there is implementations of `From` for `String` and `&'static str` the
-/// constructor need not be used directly as calling `msg.into()` should turn a message into the
-/// correct `Info` variant.
+/// constructor need not be used directly as calling `msg.into()` should turn a
+/// message into the correct `Info` variant.
 #[derive(Clone, Debug)]
 pub enum Info<T, R> {
     Token(T),
@@ -193,7 +193,8 @@ impl<R> From<u8> for Info<u8, R> {
     }
 }
 
-/// Enum used to store information about an error that has occurred during parsing.
+/// Enum used to store information about an error that has occurred during
+/// parsing.
 #[derive(Debug)]
 pub enum Error<T, R> {
     /// Error indicating an unexpected token has been encountered in the stream
@@ -215,10 +216,12 @@ where
     fn unexpected_token(token: Item) -> Self {
         Error::Unexpected(Info::Token(token))
     }
+
     #[inline]
     fn unexpected_range(token: Range) -> Self {
         Error::Unexpected(Info::Range(token))
     }
+
     #[inline]
     fn unexpected_format<T>(msg: T) -> Self
     where
@@ -226,6 +229,7 @@ where
     {
         Error::Unexpected(Info::Owned(msg.to_string()))
     }
+
     #[inline]
     fn unexpected_static_message(msg: &'static str) -> Self {
         Error::Unexpected(Info::Static(msg))
@@ -235,10 +239,12 @@ where
     fn expected_token(token: Item) -> Self {
         Error::Expected(Info::Token(token))
     }
+
     #[inline]
     fn expected_range(token: Range) -> Self {
         Error::Expected(Info::Range(token))
     }
+
     #[inline]
     fn expected_format<T>(msg: T) -> Self
     where
@@ -246,6 +252,7 @@ where
     {
         Error::Expected(Info::Owned(msg.to_string()))
     }
+
     #[inline]
     fn expected_static_message(msg: &'static str) -> Self {
         Error::Expected(Info::Static(msg))
@@ -258,14 +265,17 @@ where
     {
         Error::Message(Info::Owned(msg.to_string()))
     }
+
     #[inline]
     fn message_static_message(msg: &'static str) -> Self {
         Error::Message(Info::Static(msg))
     }
+
     #[inline]
     fn message_token(token: Item) -> Self {
         Error::Message(Info::Token(token))
     }
+
     #[inline]
     fn message_range(token: Range) -> Self {
         Error::Message(Info::Range(token))
@@ -319,10 +329,12 @@ where
     Position: Default,
 {
     type StreamError = Self;
+
     #[inline]
     fn empty(_: Position) -> Self {
         Self::message_static_message("")
     }
+
     #[inline]
     fn from_error(_: Position, err: Self::StreamError) -> Self {
         err
@@ -420,10 +432,12 @@ where
     Position: Ord + Clone,
 {
     type StreamError = Error<Item, Range>;
+
     #[inline]
     fn empty(pos: Position) -> Self {
         Errors::empty(pos)
     }
+
     #[inline]
     fn from_error(position: Position, err: Self::StreamError) -> Self {
         Self::new(position, err)
@@ -582,8 +596,8 @@ impl<T, R> Error<T, R> {
         R: fmt::Display,
     {
         // First print the token that we did not expect
-        // There should really just be one unexpected message at this point though we print them
-        // all to be safe
+        // There should really just be one unexpected message at this point though we
+        // print them all to be safe
         let unexpected = errors.iter().filter(|e| match **e {
             Error::Unexpected(_) => true,
             _ => false,
@@ -625,21 +639,24 @@ impl<T, R> Error<T, R> {
     }
 }
 
-/// Convenience alias over `Errors` for `StreamOnce` types which makes it possible to specify the
-/// `Errors` type from a `StreamOnce` by writing `ParseError<Input>` instead of `Errors<Input::Token,
-/// Input::Range, Input::Position>`
+/// Convenience alias over `Errors` for `StreamOnce` types which makes it
+/// possible to specify the `Errors` type from a `StreamOnce` by writing
+/// `ParseError<Input>` instead of `Errors<Input::Token, Input::Range,
+/// Input::Position>`
 pub type ParseError<S> =
     Errors<<S as StreamOnce>::Token, <S as StreamOnce>::Range, <S as StreamOnce>::Position>;
 
-/// Struct which hold information about an error that occurred at a specific position.
-/// Can hold multiple instances of `Error` if more that one error occurred in the same position.
+/// Struct which hold information about an error that occurred at a specific
+/// position. Can hold multiple instances of `Error` if more that one error
+/// occurred in the same position.
 #[derive(Debug, PartialEq)]
 pub struct Errors<T, R, P> {
     /// The position where the error occurred
     pub position: P,
-    /// A vector containing specific information on what errors occurred at `position`. Usually
-    /// a fully formed message contains one `Unexpected` error and one or more `Expected` errors.
-    /// `Message` and `Other` may also appear (`combine` never generates these errors on its own)
+    /// A vector containing specific information on what errors occurred at
+    /// `position`. Usually a fully formed message contains one `Unexpected`
+    /// error and one or more `Expected` errors. `Message` and `Other` may
+    /// also appear (`combine` never generates these errors on its own)
     /// and may warrant custom handling.
     pub errors: Vec<Error<T, R>>,
 }
@@ -651,7 +668,8 @@ impl<T, R, P> Errors<T, R, P> {
         Self::from_errors(position, vec![error])
     }
 
-    /// Constructs an error with no other information than the position it occurred at.
+    /// Constructs an error with no other information than the position it
+    /// occurred at.
     #[inline]
     pub fn empty(position: P) -> Errors<T, R, P> {
         Self::from_errors(position, vec![])
@@ -663,15 +681,15 @@ impl<T, R, P> Errors<T, R, P> {
         Errors { position, errors }
     }
 
-    /// Constructs an end of input error. Should be returned by parsers which encounter end of
-    /// input unexpectedly.
+    /// Constructs an end of input error. Should be returned by parsers which
+    /// encounter end of input unexpectedly.
     #[inline]
     pub fn end_of_input(position: P) -> Errors<T, R, P> {
         Self::new(position, Error::end_of_input())
     }
 
-    /// Adds an error if `error` does not exist in this `ParseError` already (as determined byte
-    /// `PartialEq`).
+    /// Adds an error if `error` does not exist in this `ParseError` already (as
+    /// determined byte `PartialEq`).
     pub fn add_error(&mut self, error: Error<T, R>)
     where
         T: PartialEq,
@@ -693,9 +711,10 @@ impl<T, R, P> Errors<T, R, P> {
         self.errors.push(Error::Expected(info));
     }
 
-    /// Merges two `ParseError`s. If they exist at the same position the errors of `other` are
-    /// added to `self` (using `add_error` to skip duplicates). If they are not at the same
-    /// position the error furthest ahead are returned, ignoring the other `ParseError`.
+    /// Merges two `ParseError`s. If they exist at the same position the errors
+    /// of `other` are added to `self` (using `add_error` to skip
+    /// duplicates). If they are not at the same position the error furthest
+    /// ahead are returned, ignoring the other `ParseError`.
     pub fn merge(mut self, mut other: Errors<T, R, P>) -> Errors<T, R, P>
     where
         P: Ord,
@@ -820,6 +839,7 @@ where
     fn checkpoint(&self) -> Self::Checkpoint {
         self.0.checkpoint()
     }
+
     fn reset(&mut self, checkpoint: Self::Checkpoint) -> Result<(), Self::Error> {
         self.0
             .reset(checkpoint)
@@ -833,10 +853,10 @@ where
     S::Token: PartialEq,
     S::Range: PartialEq,
 {
-    type Token = S::Token;
-    type Range = S::Range;
-    type Position = S::Position;
     type Error = ParseError<S>;
+    type Position = S::Position;
+    type Range = S::Range;
+    type Token = S::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<Self::Token, StreamErrorFor<Self>> {

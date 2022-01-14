@@ -125,15 +125,16 @@ where
 {
     type Output = R;
     type PartialState = ();
+
     #[inline]
     fn parse_lazy(&mut self, input: &mut Input) -> ParseResult<Self::Output, Input::Error> {
         satisfy_impl(input, &mut self.predicate)
     }
 }
 
-/// Parses a token and passes it to `predicate`. If `predicate` returns `Some` the parser succeeds
-/// and returns the value inside the `Option`. If `predicate` returns `None` the parser fails
-/// without consuming any input.
+/// Parses a token and passes it to `predicate`. If `predicate` returns `Some`
+/// the parser succeeds and returns the value inside the `Option`. If
+/// `predicate` returns `None` the parser fails without consuming any input.
 ///
 /// ```
 /// # extern crate combine;
@@ -188,6 +189,7 @@ where
     fn parse_lazy(&mut self, input: &mut Input) -> ParseResult<Input::Token, Input::Error> {
         satisfy_impl(input, |c| if c == self.c { Some(c) } else { None })
     }
+
     fn add_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         errors.error.add_expected(error::Token(self.c.clone()));
     }
@@ -236,6 +238,7 @@ where
 {
     type Output = T;
     type PartialState = ();
+
     #[inline]
     fn parse_lazy(&mut self, input: &mut Input) -> ParseResult<T, Input::Error> {
         let start = input.position();
@@ -277,6 +280,7 @@ where
             PeekOk(self.tokens.clone())
         }
     }
+
     fn add_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         errors.error.add_expected(&self.expected);
     }
@@ -284,9 +288,10 @@ where
 
 /// Parses multiple tokens.
 ///
-/// Consumes items from the input and compares them to the values from `tokens` using the
-/// comparison function `cmp`. Succeeds if all the items from `tokens` are matched in the input
-/// stream and fails otherwise with `expected` used as part of the error.
+/// Consumes items from the input and compares them to the values from `tokens`
+/// using the comparison function `cmp`. Succeeds if all the items from `tokens`
+/// are matched in the input stream and fails otherwise with `expected` used as
+/// part of the error.
 ///
 /// ```
 /// # extern crate combine;
@@ -384,9 +389,9 @@ where
 
 /// Parses multiple tokens.
 ///
-/// Consumes items from the input and compares them to the values from `tokens` using the
-/// comparison function `cmp`. Succeeds if all the items from `tokens` are matched in the input
-/// stream and fails otherwise.
+/// Consumes items from the input and compares them to the values from `tokens`
+/// using the comparison function `cmp`. Succeeds if all the items from `tokens`
+/// are matched in the input stream and fails otherwise.
 ///
 /// ```
 /// # extern crate combine;
@@ -585,6 +590,7 @@ where
 {
     type Output = T;
     type PartialState = ();
+
     #[inline]
     fn parse_lazy(&mut self, _: &mut Input) -> ParseResult<T, Input::Error> {
         PeekOk(self.0.clone())
@@ -620,6 +626,7 @@ where
 {
     type Output = R;
     type PartialState = ();
+
     #[inline]
     fn parse_lazy(&mut self, _: &mut Input) -> ParseResult<R, Input::Error> {
         PeekOk((self.0)())
@@ -628,7 +635,8 @@ where
 
 /// Always returns the value produced by calling `f`.
 ///
-/// Can be used when `value` is unable to be used for lack of `Clone` implementation on the value.
+/// Can be used when `value` is unable to be used for lack of `Clone`
+/// implementation on the value.
 ///
 /// ```
 /// # use combine::*;

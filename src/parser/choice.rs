@@ -1,5 +1,5 @@
-//! Combinators which take one or more parsers and attempts to parse successfully with at least one
-//! of them.
+//! Combinators which take one or more parsers and attempts to parse
+//! successfully with at least one of them.
 
 use crate::{
     error::{
@@ -12,8 +12,8 @@ use crate::{
 };
 
 /// Takes a number of parsers and tries to apply them each in order.
-/// Fails if all the parsers fails or if an applied parser fails after it has committed to its
-/// parse.
+/// Fails if all the parsers fails or if an applied parser fails after it has
+/// committed to its parse.
 ///
 /// ```
 /// # #[macro_use]
@@ -63,8 +63,8 @@ macro_rules! parse_mode_choice {
     };
 }
 
-/// `ChoiceParser` represents a parser which may parse one of several different choices depending
-/// on the input.
+/// `ChoiceParser` represents a parser which may parse one of several different
+/// choices depending on the input.
 ///
 /// This is an internal trait used to overload the `choice` function.
 pub trait ChoiceParser<Input: Stream> {
@@ -105,6 +105,7 @@ where
     type PartialState = P::PartialState;
 
     parse_mode_choice!(Input);
+
     #[inline]
     fn parse_mode_choice<M>(
         &mut self,
@@ -362,6 +363,7 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -518,8 +520,9 @@ where
     }
 }
 
-/// Takes a tuple, a slice or an array of parsers and tries to apply them each in order.
-/// Fails if all the parsers fails or if an applied parser consumes input before failing.
+/// Takes a tuple, a slice or an array of parsers and tries to apply them each
+/// in order. Fails if all the parsers fails or if an applied parser consumes
+/// input before failing.
 ///
 /// ```
 /// # extern crate combine;
@@ -569,6 +572,7 @@ where
     type PartialState = <Choice<(P1, P2)> as Parser<Input>>::PartialState;
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -592,8 +596,9 @@ where
 
 /// Equivalent to [`p1.or(p2)`].
 ///
-/// If you are looking to chain 3 or more parsers using `or` you may consider using the
-/// [`choice!`] macro instead, which can be clearer and may result in a faster parser.
+/// If you are looking to chain 3 or more parsers using `or` you may consider
+/// using the [`choice!`] macro instead, which can be clearer and may result in
+/// a faster parser.
 ///
 /// ```
 /// # extern crate combine;
@@ -641,6 +646,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -662,12 +670,11 @@ where
             }
         }
     }
-
-    forward_parser!(Input, add_error parser_count, 0);
 }
 
-/// Parses `parser` and outputs `Some(value)` if it succeeds, `None` if it fails without
-/// consuming any input. Fails if `parser` fails after having committed some input.
+/// Parses `parser` and outputs `Some(value)` if it succeeds, `None` if it fails
+/// without consuming any input. Fails if `parser` fails after having committed
+/// some input.
 ///
 /// ```
 /// # extern crate combine;
@@ -797,8 +804,8 @@ macro_rules! dispatch_inner {
     }
 }
 
-/// `dispatch!` allows a parser to be constructed depending on earlier input, without forcing each
-/// branch to have the same type of parser
+/// `dispatch!` allows a parser to be constructed depending on earlier input,
+/// without forcing each branch to have the same type of parser
 ///
 /// ```
 /// use combine::{dispatch, any, token, satisfy, EasyParser, Parser};
@@ -838,9 +845,8 @@ macro_rules! dispatch {
 #[cfg(all(feature = "std", test))]
 mod tests {
 
-    use crate::parser::{token::any, EasyParser};
-
     use super::*;
+    use crate::parser::{token::any, EasyParser};
 
     #[test]
     fn choice_single_parser() {

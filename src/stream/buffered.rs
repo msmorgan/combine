@@ -5,17 +5,20 @@ use crate::{
     stream::{ParseError, Positioned, ResetStream, StreamErrorFor, StreamOnce},
 };
 
-/// `Stream` which buffers items from an instance of `StreamOnce` into a ring buffer.
-/// Instances of `StreamOnce` which is not able to implement `ResetStream` (such as `ReadStream`) may
-/// use this as a way to implement `ResetStream` and become a full `Stream` instance.
+/// `Stream` which buffers items from an instance of `StreamOnce` into a ring
+/// buffer. Instances of `StreamOnce` which is not able to implement
+/// `ResetStream` (such as `ReadStream`) may use this as a way to implement
+/// `ResetStream` and become a full `Stream` instance.
 ///
-/// The drawback is that the buffer only stores a limited number of items which limits how many
-/// tokens that can be reset and replayed. If a `buffered::Stream` is reset past this limit an error
-/// will be returned when `uncons` is next called.
+/// The drawback is that the buffer only stores a limited number of items which
+/// limits how many tokens that can be reset and replayed. If a
+/// `buffered::Stream` is reset past this limit an error will be returned when
+/// `uncons` is next called.
 ///
-/// NOTE: If this stream is used in conjunction with an error enhancing stream such as
-/// `easy::Stream` (also via the `easy_parser` method) it is recommended that the `buffered::Stream`
-/// instance wraps the `easy::Stream` instance instead of the other way around.
+/// NOTE: If this stream is used in conjunction with an error enhancing stream
+/// such as `easy::Stream` (also via the `easy_parser` method) it is recommended
+/// that the `buffered::Stream` instance wraps the `easy::Stream` instance
+/// instead of the other way around.
 ///
 /// ```ignore
 /// // DO
@@ -65,8 +68,8 @@ where
     Input::Position: Clone,
     Input::Token: Clone,
 {
-    /// Constructs a new `BufferedStream` from a `StreamOnce` instance with a `lookahead`
-    /// number of elements that can be stored in the buffer.
+    /// Constructs a new `BufferedStream` from a `StreamOnce` instance with a
+    /// `lookahead` number of elements that can be stored in the buffer.
     pub fn new(iter: Input, lookahead: usize) -> Stream<Input> {
         Stream {
             offset: 0,
@@ -104,10 +107,10 @@ where
     Input: StreamOnce + Positioned,
     Input::Token: Clone,
 {
-    type Token = Input::Token;
-    type Range = Input::Range;
-    type Position = Input::Position;
     type Error = Input::Error;
+    type Position = Input::Position;
+    type Range = Input::Range;
+    type Token = Input::Token;
 
     #[inline]
     fn uncons(&mut self) -> Result<Input::Token, StreamErrorFor<Self>> {
@@ -115,8 +118,8 @@ where
             let position = self.iter.position();
             let token = self.iter.uncons()?;
             self.buffer_offset += 1;
-            // We want the VecDeque to only keep the last .capacity() elements so we need to remove
-            // an element if it gets to large
+            // We want the VecDeque to only keep the last .capacity() elements so we need to
+            // remove an element if it gets to large
             if self.buffer.len() == self.buffer.capacity() {
                 self.buffer.pop_front();
             }

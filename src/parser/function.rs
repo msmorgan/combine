@@ -24,8 +24,8 @@ pub struct FnParser<Input, F>(F, PhantomData<fn(Input) -> Input>);
 
 /// Wraps a function, turning it into a parser.
 ///
-/// Mainly needed to turn closures into parsers as function types can be casted to function pointers
-/// to make them usable as a parser.
+/// Mainly needed to turn closures into parsers as function types can be casted
+/// to function pointers to make them usable as a parser.
 ///
 /// ```
 /// extern crate combine;
@@ -129,9 +129,10 @@ where
     }
 }
 
-/// Constructs a parser out of an environment and a function which needs the given environment to
-/// do the parsing. This is commonly useful to allow multiple parsers to share some environment
-/// while still allowing the parsers to be written in separate functions.
+/// Constructs a parser out of an environment and a function which needs the
+/// given environment to do the parsing. This is commonly useful to allow
+/// multiple parsers to share some environment while still allowing the parsers
+/// to be written in separate functions.
 ///
 /// ```
 /// # extern crate combine;

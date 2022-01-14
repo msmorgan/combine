@@ -100,7 +100,8 @@ where
     satisfy(|ch: char| ch == '\n').expected("lf newline")
 }
 
-/// Parses carriage return and newline (`"\r\n"`), returning the newline character.
+/// Parses carriage return and newline (`"\r\n"`), returning the newline
+/// character.
 ///
 /// ```
 /// use combine::Parser;
@@ -165,7 +166,8 @@ where
     satisfy(|ch: char| ch.is_lowercase()).expected("lowercase letter")
 }
 
-/// Parses either an alphabet letter or digit according to [`std::char::is_alphanumeric`].
+/// Parses either an alphabet letter or digit according to
+/// [`std::char::is_alphanumeric`].
 ///
 /// [`std::char::is_alphanumeric`]: https://doc.rust-lang.org/std/primitive.char.html#method.is_alphanumeric
 ///
@@ -275,6 +277,7 @@ where
 #[cfg(all(feature = "std", test))]
 mod tests {
 
+    use super::*;
     use crate::{
         parser::EasyParser,
         stream::{
@@ -283,26 +286,24 @@ mod tests {
         },
     };
 
-    use super::*;
-
     #[test]
     fn space_error() {
         let result = space().easy_parse("");
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().errors,
-            vec![Error::end_of_input(), Error::Expected("whitespace".into())]
-        );
+        assert_eq!(result.unwrap_err().errors, vec![
+            Error::end_of_input(),
+            Error::Expected("whitespace".into())
+        ]);
     }
 
     #[test]
     fn string_committed() {
         let result = string("a").easy_parse(position::Stream::new("b"));
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().position,
-            SourcePosition { line: 1, column: 1 }
-        );
+        assert_eq!(result.unwrap_err().position, SourcePosition {
+            line: 1,
+            column: 1
+        });
     }
 
     #[test]

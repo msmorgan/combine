@@ -126,6 +126,7 @@ where
     type PartialState = (usize, F, P::PartialState);
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -265,8 +266,9 @@ where
             mode,
         }
     }
-    /// Converts the iterator to a `ParseResult`, returning `Ok` if the parsing so far has be done
-    /// without any errors which committed data.
+
+    /// Converts the iterator to a `ParseResult`, returning `Ok` if the parsing
+    /// so far has be done without any errors which committed data.
     pub fn into_result<O>(self, value: O) -> StdParseResult<O, Input> {
         self.into_result_(value).into()
     }
@@ -387,6 +389,7 @@ where
     type PartialState = (F, P::PartialState);
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -418,14 +421,17 @@ where
     }
 }
 
-/// Parses `p` zero or more times returning a collection with the values from `p`.
+/// Parses `p` zero or more times returning a collection with the values from
+/// `p`.
 ///
-/// If the returned collection cannot be inferred type annotations must be supplied, either by
-/// annotating the resulting type binding `let collection: Vec<_> = ...` or by specializing when
-/// calling many, `many::<Vec<_>, _, _>(...)`.
+/// If the returned collection cannot be inferred type annotations must be
+/// supplied, either by annotating the resulting type binding `let collection:
+/// Vec<_> = ...` or by specializing when calling many, `many::<Vec<_>, _,
+/// _>(...)`.
 ///
-/// NOTE: If `p` can succeed without consuming any input this may hang forever as `many` will
-/// repeatedly use `p` to parse the same location in the input every time
+/// NOTE: If `p` can succeed without consuming any input this may hang forever
+/// as `many` will repeatedly use `p` to parse the same location in the input
+/// every time
 ///
 /// ```
 /// # extern crate combine;
@@ -459,6 +465,9 @@ where
     type PartialState = (bool, bool, F, P::PartialState);
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -502,18 +511,19 @@ where
     fn add_committed_expected_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         self.add_error(errors);
     }
-
-    forward_parser!(Input, add_error parser_count, 0);
 }
 
-/// Parses `p` one or more times returning a collection with the values from `p`.
+/// Parses `p` one or more times returning a collection with the values from
+/// `p`.
 ///
-/// If the returned collection cannot be inferred type annotations must be supplied, either by
-/// annotating the resulting type binding `let collection: Vec<_> = ...` or by specializing when
-/// calling many1 `many1::<Vec<_>, _>(...)`.
+/// If the returned collection cannot be inferred type annotations must be
+/// supplied, either by annotating the resulting type binding `let collection:
+/// Vec<_> = ...` or by specializing when calling many1 `many1::<Vec<_>,
+/// _>(...)`.
 ///
-/// NOTE: If `p` can succeed without consuming any input this may hang forever as `many1` will
-/// repeatedly use `p` to parse the same location in the input every time
+/// NOTE: If `p` can succeed without consuming any input this may hang forever
+/// as `many1` will repeatedly use `p` to parse the same location in the input
+/// every time
 ///
 ///
 /// ```
@@ -629,6 +639,9 @@ where
     > as Parser<Input>>::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error parser_count, parser);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -647,16 +660,15 @@ where
     fn add_committed_expected_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         self.separator.add_error(errors)
     }
-
-    forward_parser!(Input, add_error parser_count, parser);
 }
 
-/// Parses `parser` zero or more time separated by `separator`, returning a collection with the
-/// values from `p`.
+/// Parses `parser` zero or more time separated by `separator`, returning a
+/// collection with the values from `p`.
 ///
-/// If the returned collection cannot be inferred type annotations must be supplied, either by
-/// annotating the resulting type binding `let collection: Vec<_> = ...` or by specializing when
-/// calling `sep_by`, `sep_by::<Vec<_>, _, _>(...)`.
+/// If the returned collection cannot be inferred type annotations must be
+/// supplied, either by annotating the resulting type binding `let collection:
+/// Vec<_> = ...` or by specializing when calling `sep_by`, `sep_by::<Vec<_>, _,
+/// _>(...)`.
 ///
 /// ```
 /// # extern crate combine;
@@ -705,6 +717,9 @@ where
     );
 
     parse_mode!(Input);
+
+    forward_parser!(Input, add_error parser_count, parser);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -720,10 +735,11 @@ where
         let rest = match *parsed_one {
             Some(rest) => rest,
             None => {
-                let (first, rest) =
-                    ctry!(self
-                        .parser
-                        .parse_mode(mode, input, &mut child_state.B.state));
+                let (first, rest) = ctry!(self.parser.parse_mode(
+                    mode,
+                    input,
+                    &mut child_state.B.state
+                ));
                 elements.extend(Some(first));
                 rest
             }
@@ -745,16 +761,15 @@ where
     fn add_committed_expected_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         self.separator.add_error(errors)
     }
-
-    forward_parser!(Input, add_error parser_count, parser);
 }
 
-/// Parses `parser` one or more time separated by `separator`, returning a collection with the
-/// values from `p`.
+/// Parses `parser` one or more time separated by `separator`, returning a
+/// collection with the values from `p`.
 ///
-/// If the returned collection cannot be inferred type annotations must be supplied, either by
-/// annotating the resulting type binding `let collection: Vec<_> = ...` or by specializing when
-/// calling `sep_by`, `sep_by1::<Vec<_>, _, _>(...)`.
+/// If the returned collection cannot be inferred type annotations must be
+/// supplied, either by annotating the resulting type binding `let collection:
+/// Vec<_> = ...` or by specializing when calling `sep_by`, `sep_by1::<Vec<_>,
+/// _, _>(...)`.
 ///
 /// ```
 /// # extern crate combine;
@@ -812,6 +827,7 @@ where
     > as Parser<Input>>::PartialState;
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -832,12 +848,13 @@ where
     }
 }
 
-/// Parses `parser` zero or more times separated and ended by `separator`, returning a collection
-/// with the values from `p`.
+/// Parses `parser` zero or more times separated and ended by `separator`,
+/// returning a collection with the values from `p`.
 ///
-/// If the returned collection cannot be inferred type annotations must be supplied, either by
-/// annotating the resulting type binding `let collection: Vec<_> = ...` or by specializing when
-/// calling `sep_by`, `sep_by::<Vec<_>, _, _>(...)`
+/// If the returned collection cannot be inferred type annotations must be
+/// supplied, either by annotating the resulting type binding `let collection:
+/// Vec<_> = ...` or by specializing when calling `sep_by`, `sep_by::<Vec<_>, _,
+/// _>(...)`
 ///
 /// ```
 /// # extern crate combine;
@@ -887,6 +904,7 @@ where
     );
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -902,10 +920,11 @@ where
         let rest = match *parsed_one {
             Some(rest) => rest,
             None => {
-                let (first, rest) =
-                    ctry!(self
-                        .parser
-                        .parse_mode(mode, input, &mut child_state.B.state));
+                let (first, rest) = ctry!(self.parser.parse_mode(
+                    mode,
+                    input,
+                    &mut child_state.B.state
+                ));
                 *parsed_one = Some(rest);
                 elements.extend(Some(first));
                 rest
@@ -935,12 +954,13 @@ where
     }
 }
 
-/// Parses `parser` one or more times separated and ended by `separator`, returning a collection
-/// with the values from `p`.
+/// Parses `parser` one or more times separated and ended by `separator`,
+/// returning a collection with the values from `p`.
 ///
 /// If the returned collection cannot be inferred type annotations must be
-/// supplied, either by annotating the resulting type binding `let collection: Vec<_> = ...` or by
-/// specializing when calling `sep_by`, `sep_by1::<Vec<_>, _, _>(...)`.
+/// supplied, either by annotating the resulting type binding `let collection:
+/// Vec<_> = ...` or by specializing when calling `sep_by`, `sep_by1::<Vec<_>,
+/// _, _>(...)`.
 ///
 /// ```
 /// # extern crate combine;
@@ -993,6 +1013,7 @@ where
     );
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -1043,8 +1064,9 @@ where
     }
 }
 
-/// Parses `p` 1 or more times separated by `op`. The value returned is the one produced by the
-/// left associative application of the function returned by the parser `op`.
+/// Parses `p` 1 or more times separated by `op`. The value returned is the one
+/// produced by the left associative application of the function returned by the
+/// parser `op`.
 ///
 /// ```
 /// # extern crate combine;
@@ -1078,6 +1100,7 @@ where
 {
     type Output = P::Output;
     type PartialState = ();
+
     #[inline]
     fn parse_lazy(&mut self, input: &mut Input) -> ParseResult<P::Output, Input::Error> {
         // FIXME FastResult
@@ -1110,13 +1133,15 @@ where
         }
         Ok((l, committed)).into()
     }
+
     fn add_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         self.0.add_error(errors)
     }
 }
 
-/// Parses `p` one or more times separated by `op`. The value returned is the one produced by the
-/// right associative application of the function returned by `op`.
+/// Parses `p` one or more times separated by `op`. The value returned is the
+/// one produced by the right associative application of the function returned
+/// by `op`.
 ///
 /// ```
 /// # extern crate combine;
@@ -1154,6 +1179,7 @@ where
     type PartialState = (F, P::PartialState);
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -1191,8 +1217,9 @@ where
     }
 }
 
-/// Takes input until `end` is encountered or `end` indicates that it has committed input before
-/// failing (`attempt` can be used to make it look like it has not committed any input)
+/// Takes input until `end` is encountered or `end` indicates that it has
+/// committed input before failing (`attempt` can be used to make it look like
+/// it has not committed any input)
 ///
 /// ```
 /// # extern crate combine;
@@ -1278,6 +1305,7 @@ where
     type PartialState = (F, bool, P::PartialState, E::PartialState);
 
     parse_mode!(Input);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -1445,14 +1473,15 @@ where
     }
 }
 
-/// Parses an escaped string by first applying `parser` which accept the normal characters which do
-/// not need escaping. Once `parser` can not consume any more input it checks if the next token
-/// is `escape`. If it is then `escape_parser` is used to parse the escaped character and then
-/// resumes parsing using `parser`. If `escape` was not found then the parser finishes
-/// successfully.
+/// Parses an escaped string by first applying `parser` which accept the normal
+/// characters which do not need escaping. Once `parser` can not consume any
+/// more input it checks if the next token is `escape`. If it is then
+/// `escape_parser` is used to parse the escaped character and then
+/// resumes parsing using `parser`. If `escape` was not found then the parser
+/// finishes successfully.
 ///
-/// This returns `()` since there isn't a good way to collect the output of the parsers so it is
-/// best paired with one of the `recognize` parsers.
+/// This returns `()` since there isn't a good way to collect the output of the
+/// parsers so it is best paired with one of the `recognize` parsers.
 ///
 /// ```
 /// # extern crate combine;
@@ -1594,7 +1623,6 @@ where
     }
 }
 
-///
 /// ```
 /// # use combine::parser::repeat::{count_min_max, iterate};
 /// # use combine::*;

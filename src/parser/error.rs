@@ -22,10 +22,12 @@ where
 {
     type Output = T;
     type PartialState = ();
+
     #[inline]
     fn parse_lazy(&mut self, input: &mut Input) -> ParseResult<T, <Input as StreamOnce>::Error> {
         PeekErr(<Input as StreamOnce>::Error::empty(input.position()).into())
     }
+
     fn add_error(&mut self, errors: &mut Tracked<<Input as StreamOnce>::Error>) {
         errors.error.add(StreamError::unexpected(&self.0));
     }
@@ -63,8 +65,9 @@ where
 /// Always fails with `message` as an unexpected error.
 /// Never consumes any input.
 ///
-/// May have anything as the output type but must be used such that the output type can inferred.
-/// The `unexpected` parser can be used if the output type does not matter
+/// May have anything as the output type but must be used such that the output
+/// type can inferred. The `unexpected` parser can be used if the output type
+/// does not matter
 ///
 /// ```
 /// # extern crate combine;
@@ -104,6 +107,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, parser_count add_committed_expected_error, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -133,8 +139,6 @@ where
         self.0.add_error(errors);
         errors.error.add_message(&self.1);
     }
-
-    forward_parser!(Input, parser_count add_committed_expected_error, 0);
 }
 
 /// Equivalent to [`p1.message(msg)`].
@@ -161,6 +165,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, parser_count add_committed_expected_error, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -179,8 +186,6 @@ where
             self.0.add_error(errors);
         })
     }
-
-    forward_parser!(Input, parser_count add_committed_expected_error, 0);
 }
 
 /// Equivalent to [`p.expected(info)`].
@@ -206,6 +211,9 @@ where
     type PartialState = P::PartialState;
 
     parse_mode!(Input);
+
+    forward_parser!(Input, parser_count, 0);
+
     #[inline]
     fn parse_mode_impl<M>(
         &mut self,
@@ -229,8 +237,6 @@ where
         _errors: &mut Tracked<<Input as StreamOnce>::Error>,
     ) {
     }
-
-    forward_parser!(Input, parser_count, 0);
 }
 
 /// Equivalent to [`p.silent()`].

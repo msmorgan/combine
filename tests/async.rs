@@ -234,8 +234,7 @@ impl_decoder! { Basic, String, basic_parser() }
 
 #[test]
 fn many1_skip_no_errors() {
-    let input = "123\r\n\
-                 456\r\n";
+    let input = "123\r\n456\r\n";
 
     let result = run_decoder(input, vec![], Basic::default());
 
@@ -271,8 +270,8 @@ parser! {
     }
 }
 
-fn content_length<'a, Input>(
-) -> impl Parser<Input, Output = String, PartialState = AnySendPartialState> + 'a
+fn content_length<'a, Input>()
+-> impl Parser<Input, Output = String, PartialState = AnySendPartialState> + 'a
 where
     Input: RangeStream<Token = char, Range = &'a str> + 'a,
 {
@@ -804,12 +803,11 @@ fn decode_async_std() {
 
 #[tokio::test]
 async fn decode_loop() {
-    use tokio::fs::File;
-
     use combine::{
         decode_tokio, many1, satisfy, skip_many1,
         stream::{buf_reader::BufReader, Decoder},
     };
+    use tokio::fs::File;
     let mut read = BufReader::new(File::open("README.md").await.unwrap());
     let mut decoder = Decoder::new_bufferless();
     let is_whitespace = |b: u8| b == b' ' || b == b'\r' || b == b'\n';
